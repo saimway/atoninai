@@ -53,6 +53,37 @@ export default function Sidebar({ chatHistory, onSelectChat, onNewChat, isMobile
         initial={false}
         animate={currentVariant}
         variants={sidebarVariants}
+        // Use z-40 for Sidebar, so elements in main content with z-50 can overlay if needed (though usually sidebar is top)
+        // However, the issue is overlap. The Sidebar is FIXED left.
+        // If the main content is offset by margin, they shouldn't overlap.
+        // But the error says: "subtree intercepts pointer events"
+        // <div class="fixed left-0 top-0 h-full bg-card border-r border-border z-50 flex flex-col">
+        // intercepts click on <button ...>Atonin V1</button>
+        // This implies the Sidebar is covering the main content?
+        // Ah, on Desktop, the Sidebar is fixed. The main content has a margin.
+        // But if the screen width in Playwright (1920) makes them overlap? No.
+        // Wait, "subtree intercepts pointer events" -> means the element clicked is BEHIND the sidebar div.
+        // If the sidebar is collapsed (80px) or expanded (260px), and main content has margin, it should be fine.
+        // UNLESS the verification script logic is clicking something that is visually under the sidebar?
+        // Or if the Sidebar width logic in JS didn't trigger correctly and it's expanded but margin is for collapsed?
+        // The error log shows:
+        // <div class="p-4 flex items-center justify-between border-b border-border"> from Sidebar
+        // intercepts click on ModelSelector.
+        // This means the Sidebar HEADER is covering the Top Bar?
+        // The Sidebar header is inside the fixed sidebar.
+        // If the sidebar z-index is 50, and Top Bar is z-30, Sidebar wins.
+        // If they overlap physically, Sidebar wins.
+        // They should NOT overlap physically on Desktop if margin is correct.
+        // CSS: .main-content { margin-left: 80px; }
+        // If Sidebar is expanded (260px), margin should be 260px?
+        // I used style jsx in page.tsx:
+        // .sidebar-expanded + .main-content { margin-left: 260px; }
+        // But I am NOT adding the 'sidebar-expanded' class to the Sidebar or a wrapper!
+        // I am managing width via Framer Motion on the div itself.
+        // So the margin on the main content is static 80px?
+        // If Sidebar is expanded (260px) and margin is 80px, Sidebar COVERS 180px of content!
+        // THAT IS THE BUG.
+
         className="fixed left-0 top-0 h-full bg-card border-r border-border z-50 flex flex-col"
       >
         <div className="p-4 flex items-center justify-between border-b border-border">

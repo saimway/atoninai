@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Sidebar from '@/app/components/Sidebar';
 import { useLocalStorage, Craft, ChatThread, ChatMessage } from '@/app/hooks/useLocalStorage';
-import { Plus, Trash2, ArrowLeft, Bot, Send, Loader2, Menu } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Bot, Send, Loader2, Menu, MoreVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageBubble } from '@/app/components/MessageBubble';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
@@ -162,7 +162,7 @@ export default function CraftsPage() {
         setIsOpen={setIsSidebarOpen}
       />
 
-      <div className="flex-1 flex flex-col h-full relative transition-all duration-300 md:ml-[80px] lg:ml-[80px] xl:ml-[80px] md:pl-0">
+      <div className="flex-1 flex flex-col h-full relative transition-all duration-300 md:ml-[260px] lg:ml-[260px] xl:ml-[260px] md:pl-0">
          <style jsx global>{`
             @media (min-width: 768px) {
               .main-content { margin-left: 80px; }
@@ -173,7 +173,7 @@ export default function CraftsPage() {
         {/* Mobile Header (Crafts) */}
          <div className="md:hidden flex items-center p-4 border-b border-border bg-card">
               <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 hover:bg-muted rounded-md">
-                  <Menu size={20} />
+                  <MoreVertical size={20} />
               </button>
               <span className="ml-2 font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
                   My Crafts

@@ -44,3 +44,6 @@
  GET /crafts 200 in 73ms (compile: 7ms, render: 66ms)
  GET / 200 in 80ms (compile: 8ms, render: 72ms)
  GET /crafts 200 in 379ms (compile: 201ms, render: 178ms)
+ GET / 200 in 2.7s (compile: 1496ms, render: 1162ms)
+ GET / 200 in 528ms (compile: 236ms, render: 292ms)
+ GET /crafts 200 in 434ms (compile: 163ms, render: 271ms)
