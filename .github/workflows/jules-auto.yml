@@ -5,7 +5,7 @@ on:
 
 jobs:
   approve-and-merge:
-    # Only run for Jules
+    # Only run if the PR is created by the Jules bot
     if: github.actor == 'google-jules[bot]'
     runs-on: ubuntu-latest
     permissions:
@@ -15,8 +15,7 @@ jobs:
       - name: Auto-Approve & Merge
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
           gh pr review --approve "$PR_URL"
           gh pr merge --auto --squash "$PR_URL"
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
