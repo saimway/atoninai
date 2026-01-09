@@ -47,3 +47,5 @@
  GET / 200 in 2.7s (compile: 1496ms, render: 1162ms)
  GET / 200 in 528ms (compile: 236ms, render: 292ms)
  GET /crafts 200 in 434ms (compile: 163ms, render: 271ms)
+○ Compiling /verify ...
+ GET /verify 200 in 8.3s (compile: 5.8s, render: 2.5s)
