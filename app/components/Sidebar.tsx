@@ -4,11 +4,14 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { SidebarItem } from './SidebarItem';
 import { MessageSquare, Hammer, Settings, Menu, X, Plus } from 'lucide-react';
-import { useTheme } from '@/app/contexts/ThemeContext';
-import { ChatThread } from '@/app/hooks/useLocalStorage';
+import { ChatThread, Craft } from '@/app/hooks/useLocalStorage';
+import { SettingsModal } from './SettingsModal';
 
 interface SidebarProps {
   chatHistory: ChatThread[];
+  setChatHistory: (history: ChatThread[]) => void;
+  crafts: Craft[];
+  setCrafts: (crafts: Craft[]) => void;
   onSelectChat: (chatId: string) => void;
   onNewChat: () => void;
   isMobile: boolean;
@@ -16,9 +19,19 @@ interface SidebarProps {
   setIsOpen: (isOpen: boolean) => void;
 }
 
-export default function Sidebar({ chatHistory, onSelectChat, onNewChat, isMobile, isOpen, setIsOpen }: SidebarProps) {
+export default function Sidebar({
+  chatHistory,
+  setChatHistory,
+  crafts,
+  setCrafts,
+  onSelectChat,
+  onNewChat,
+  isMobile,
+  isOpen,
+  setIsOpen
+}: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { theme, setTheme } = useTheme();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const toggleSidebar = () => {
     if (isMobile) {
@@ -41,6 +54,15 @@ export default function Sidebar({ chatHistory, onSelectChat, onNewChat, isMobile
 
   return (
     <>
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        chatHistory={chatHistory}
+        setChatHistory={setChatHistory}
+        crafts={crafts}
+        setCrafts={setCrafts}
+      />
+
       {/* Mobile Overlay */}
       {isMobile && isOpen && (
         <div
@@ -101,11 +123,11 @@ export default function Sidebar({ chatHistory, onSelectChat, onNewChat, isMobile
 
         <div className="p-4 border-t border-border">
           <button
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            onClick={() => setIsSettingsOpen(true)}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors ${isCollapsed ? 'justify-center' : ''}`}
           >
              <Settings size={20} />
-             {!isCollapsed && <span className="text-sm">Theme: {theme}</span>}
+             {!isCollapsed && <span className="text-sm">Settings</span>}
           </button>
         </div>
       </motion.div>

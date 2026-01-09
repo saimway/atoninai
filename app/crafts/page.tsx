@@ -155,6 +155,9 @@ export default function CraftsPage() {
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
       <Sidebar
         chatHistory={chatHistory}
+        setChatHistory={setChatHistory}
+        crafts={crafts}
+        setCrafts={setCrafts}
         onSelectChat={() => {}}
         onNewChat={() => setSelectedCraftId(null)}
         isMobile={isMobile}

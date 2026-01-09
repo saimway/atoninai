@@ -11,7 +11,7 @@ import { Send, Menu, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Home() {
-  const { chatHistory, setChatHistory } = useLocalStorage();
+  const { chatHistory, setChatHistory, crafts, setCrafts } = useLocalStorage();
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -156,6 +156,9 @@ export default function Home() {
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
       <Sidebar
         chatHistory={chatHistory}
+        setChatHistory={setChatHistory}
+        crafts={crafts}
+        setCrafts={setCrafts}
         onSelectChat={handleSelectChat}
         onNewChat={handleNewChat}
         isMobile={isMobile}

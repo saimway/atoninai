@@ -7,40 +7,6 @@
 - Network:       http://192.168.0.2:3000
 
 ✓ Starting...
-✓ Ready in 1154ms
+✓ Ready in 1197ms
 ○ Compiling / ...
-⨯ Error: useTheme must be used within a ThemeProvider
-    at useTheme (app/contexts/ThemeContext.tsx:74:11)
-    at Sidebar (app/components/Sidebar.tsx:21:39)
-  72 |   const context = useContext(ThemeContext);
-  73 |   if (context === undefined) {
-> 74 |     throw new Error('useTheme must be used within a ThemeProvider');
-     |           ^
-  75 |   }
-  76 |   return context;
-  77 | } {
-  digest: '1357168831'
-}
- GET / 500 in 4.9s (compile: 4.4s, render: 419ms)
-⨯ Error: useTheme must be used within a ThemeProvider
-    at useTheme (app/contexts/ThemeContext.tsx:74:11)
-    at Sidebar (app/components/Sidebar.tsx:21:39)
-  72 |   const context = useContext(ThemeContext);
-  73 |   if (context === undefined) {
-> 74 |     throw new Error('useTheme must be used within a ThemeProvider');
-     |           ^
-  75 |   }
-  76 |   return context;
-  77 | } {
-  digest: '1537349659'
-}
- GET /crafts 500 in 1133ms (compile: 1016ms, render: 117ms)
- GET / 200 in 273ms (compile: 101ms, render: 173ms)
- GET / 200 in 78ms (compile: 6ms, render: 72ms)
- GET / 200 in 368ms (compile: 97ms, render: 271ms)
- GET / 200 in 627ms (compile: 314ms, render: 313ms)
- GET /crafts 200 in 490ms (compile: 247ms, render: 244ms)
- GET / 200 in 88ms (compile: 9ms, render: 79ms)
- GET /crafts 200 in 73ms (compile: 7ms, render: 66ms)
- GET / 200 in 80ms (compile: 8ms, render: 72ms)
- GET /crafts 200 in 379ms (compile: 201ms, render: 178ms)
+ GET / 200 in 7.0s (compile: 6.4s, render: 622ms)
