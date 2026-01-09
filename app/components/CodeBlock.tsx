@@ -55,7 +55,7 @@ export function CodeBlock({ language, value }: CodeBlockProps) {
             background: 'transparent',
             fontSize: '0.875rem',
           }}
-          wrapLongLines={true}
+          wrapLongLines={false}
         >
           {value}
         </SyntaxHighlighter>
