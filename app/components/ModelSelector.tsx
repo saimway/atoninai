@@ -34,12 +34,12 @@ export function ModelSelector({ currentModelId, onSelectModel, disabled }: Model
       <AnimatePresence>
         {isOpen && (
           <>
-            <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="absolute top-full left-0 mt-2 w-48 py-1 rounded-lg border border-border bg-card shadow-lg z-20"
+              className="absolute top-full left-0 mt-2 w-48 py-1 rounded-lg border border-border bg-card shadow-lg z-50"
             >
               {MODELS.map((model) => (
                 <button

@@ -7,13 +7,18 @@ export function useMediaQuery(query: string) {
 
   useEffect(() => {
     const media = window.matchMedia(query);
+    // Initialize state
     if (media.matches !== matches) {
       setMatches(media.matches);
     }
+
     const listener = () => setMatches(media.matches);
     media.addEventListener('change', listener);
     return () => media.removeEventListener('change', listener);
-  }, [matches, query]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+  // Removed 'matches' from dependency array to avoid loop/warning,
+  // as we only want to subscribe on query change. The listener handles updates.
 
   return matches;
 }
