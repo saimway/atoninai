@@ -6,7 +6,7 @@ on:
 jobs:
   approve-and-merge:
     # Only run if the PR is created by the Jules bot
-    if: github.actor == 'google-labs-jules'
+    if: github.actor == 'google-labs-jules[bot]'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
