@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { SidebarItem } from './SidebarItem';
 import { MessageSquare, Hammer, Settings, Menu, X, Plus } from 'lucide-react';
 import { useTheme } from '@/app/contexts/ThemeContext';
+import { useSidebar } from '@/app/contexts/SidebarContext';
 import { ChatThread } from '@/app/hooks/useLocalStorage';
 
 interface SidebarProps {
@@ -17,14 +17,14 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ chatHistory, onSelectChat, onNewChat, isMobile, isOpen, setIsOpen }: SidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isCollapsed, toggleCollapse } = useSidebar();
   const { theme, setTheme } = useTheme();
 
   const toggleSidebar = () => {
     if (isMobile) {
       setIsOpen(!isOpen);
     } else {
-      setIsCollapsed(!isCollapsed);
+      toggleCollapse();
     }
   };
 
