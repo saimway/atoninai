@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { useRouter } from 'next/navigation';
 import Sidebar from '@/app/components/Sidebar';
 import { useLocalStorage, Craft, ChatThread, ChatMessage } from '@/app/hooks/useLocalStorage';
-import { Plus, Trash2, ArrowLeft, Bot, Send, Loader2, Menu, MoreVertical } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Bot, Send, Loader2, MoreVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageBubble } from '@/app/components/MessageBubble';
-import { useMediaQuery } from '@/app/hooks/useMediaQuery';
+import { useSidebar } from '@/app/contexts/SidebarContext';
 
 function BotIcon() {
     return (
@@ -40,9 +41,9 @@ export default function CraftsPage() {
 
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const { isCollapsed, isMobileOpen, setIsMobileOpen, isMobile } = useSidebar();
 
   const currentThread = chatHistory.find(t => t.title === `Craft: ${selectedCraft?.name}`);
   const messages = currentThread ? currentThread.messages : [];
@@ -70,6 +71,10 @@ export default function CraftsPage() {
       setCrafts(crafts.filter(c => c.id !== id));
       if (selectedCraftId === id) setSelectedCraftId(null);
     }
+  };
+
+  const handleSelectChat = (chatId: string) => {
+    router.push(`/?chatId=${chatId}`);
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -155,24 +160,20 @@ export default function CraftsPage() {
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
       <Sidebar
         chatHistory={chatHistory}
-        onSelectChat={() => {}}
+        onSelectChat={handleSelectChat}
         onNewChat={() => setSelectedCraftId(null)}
-        isMobile={isMobile}
-        isOpen={isSidebarOpen}
-        setIsOpen={setIsSidebarOpen}
       />
 
-      <div className="flex-1 flex flex-col h-full relative transition-all duration-300 md:ml-[260px] lg:ml-[260px] xl:ml-[260px] md:pl-0">
-         <style jsx global>{`
-            @media (min-width: 768px) {
-              .main-content { margin-left: 80px; }
-              .sidebar-expanded + .main-content { margin-left: 260px; }
-            }
-          `}</style>
-
+      <div
+        className={`flex-1 flex flex-col h-full relative transition-all duration-300 md:pl-0 ${
+          isMobile
+            ? 'ml-0'
+            : (isCollapsed ? 'ml-[80px]' : 'ml-[260px]')
+        }`}
+      >
         {/* Mobile Header (Crafts) */}
          <div className="md:hidden flex items-center p-4 border-b border-border bg-card">
-              <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 hover:bg-muted rounded-md">
+              <button onClick={() => setIsMobileOpen(true)} className="p-2 -ml-2 hover:bg-muted rounded-md">
                   <MoreVertical size={20} />
               </button>
               <span className="ml-2 font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
