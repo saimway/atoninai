@@ -4,12 +4,14 @@ import { AnimatePresence, motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { ReactNode } from "react";
 import { ThemeProvider } from "../contexts/ThemeContext";
+import { SidebarProvider } from "../contexts/SidebarContext";
 
 export default function LayoutWrapper({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   return (
     <ThemeProvider>
+      <SidebarProvider>
        {/* Global Page Transition */}
        <AnimatePresence mode="wait">
         <motion.div
@@ -23,6 +25,7 @@ export default function LayoutWrapper({ children }: { children: ReactNode }) {
           {children}
         </motion.div>
       </AnimatePresence>
+      </SidebarProvider>
     </ThemeProvider>
   );
 }

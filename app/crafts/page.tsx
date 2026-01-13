@@ -8,6 +8,7 @@ import { Plus, Trash2, ArrowLeft, Bot, Send, Loader2, Menu, MoreVertical } from 
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageBubble } from '@/app/components/MessageBubble';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
+import { useSidebar } from '@/app/contexts/SidebarContext';
 
 function BotIcon() {
     return (
@@ -30,6 +31,7 @@ function BotIcon() {
 }
 
 export default function CraftsPage() {
+  const { isCollapsed } = useSidebar();
   const { crafts, setCrafts, chatHistory, setChatHistory } = useLocalStorage();
   const [isCreating, setIsCreating] = useState(false);
   const [newCraftName, setNewCraftName] = useState('');
@@ -152,7 +154,7 @@ export default function CraftsPage() {
   };
 
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden">
+    <div className="flex h-screen supports-[height:100dvh]:h-[100dvh] bg-background text-foreground overflow-hidden">
       <Sidebar
         chatHistory={chatHistory}
         onSelectChat={() => {}}
@@ -162,13 +164,11 @@ export default function CraftsPage() {
         setIsOpen={setIsSidebarOpen}
       />
 
-      <div className="flex-1 flex flex-col h-full relative transition-all duration-300 md:ml-[260px] lg:ml-[260px] xl:ml-[260px] md:pl-0">
-         <style jsx global>{`
-            @media (min-width: 768px) {
-              .main-content { margin-left: 80px; }
-              .sidebar-expanded + .main-content { margin-left: 260px; }
-            }
-          `}</style>
+      <div
+        className={`flex-1 flex flex-col h-full relative transition-all duration-300 ${
+          isCollapsed ? "md:ml-[80px]" : "md:ml-[260px]"
+        } md:pl-0`}
+      >
 
         {/* Mobile Header (Crafts) */}
          <div className="md:hidden flex items-center p-4 border-b border-border bg-card">

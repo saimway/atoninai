@@ -1,0 +1,24 @@
+
+> atonin-ai@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+
+✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+✓ Ready in 1661ms
+○ Compiling / ...
+ GET / 200 in 9.8s (compile: 8.6s, render: 1154ms)
+ GET / 200 in 77ms (compile: 7ms, render: 70ms)
+ GET / 200 in 74ms (compile: 6ms, render: 67ms)
+ GET / 200 in 68ms (compile: 5ms, render: 63ms)
+ GET / 200 in 105ms (compile: 12ms, render: 93ms)
+ GET / 200 in 61ms (compile: 4ms, render: 57ms)
+ GET / 200 in 72ms (compile: 5ms, render: 68ms)
+ GET / 200 in 56ms (compile: 4ms, render: 52ms)
