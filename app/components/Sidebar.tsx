@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { SidebarItem } from './SidebarItem';
 import { MessageSquare, Hammer, Settings, Menu, X, Plus } from 'lucide-react';
 import { useTheme } from '@/app/contexts/ThemeContext';
+import { useSidebar } from '@/app/contexts/SidebarContext';
 import { ChatThread } from '@/app/hooks/useLocalStorage';
 
 interface SidebarProps {
@@ -17,22 +17,22 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ chatHistory, onSelectChat, onNewChat, isMobile, isOpen, setIsOpen }: SidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isCollapsed, toggleSidebar: toggleDesktopSidebar } = useSidebar();
   const { theme, setTheme } = useTheme();
 
-  const toggleSidebar = () => {
+  const handleToggle = () => {
     if (isMobile) {
       setIsOpen(!isOpen);
     } else {
-      setIsCollapsed(!isCollapsed);
+      toggleDesktopSidebar();
     }
   };
 
   const sidebarVariants = {
-    open: { width: "260px", x: 0 },
-    collapsed: { width: "80px", x: 0 },
-    mobileClosed: { x: "-100%" },
-    mobileOpen: { x: 0, width: "280px" },
+    open: { width: "260px", x: 0, transition: { duration: 0.3, ease: "easeInOut" } },
+    collapsed: { width: "80px", x: 0, transition: { duration: 0.3, ease: "easeInOut" } },
+    mobileClosed: { x: "-100%", transition: { duration: 0.3, ease: "easeInOut" } },
+    mobileOpen: { x: 0, width: "280px", transition: { duration: 0.3, ease: "easeInOut" } },
   };
 
   const currentVariant = isMobile
@@ -92,7 +92,7 @@ export default function Sidebar({ chatHistory, onSelectChat, onNewChat, isMobile
               Atonin AI
             </span>
           )}
-          <button onClick={toggleSidebar} className="p-1 hover:bg-muted rounded-md text-muted-foreground">
+          <button onClick={handleToggle} className="p-1 hover:bg-muted rounded-md text-muted-foreground">
             {isMobile ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
