@@ -6,7 +6,7 @@ import Sidebar from '@/app/components/Sidebar';
 import { MessageBubble } from '@/app/components/MessageBubble';
 import { ModelSelector, MODELS } from '@/app/components/ModelSelector';
 import { useLocalStorage, ChatMessage, ChatThread } from '@/app/hooks/useLocalStorage';
-import { useMediaQuery } from '@/app/hooks/useMediaQuery';
+import { useSidebar } from '@/app/contexts/SidebarContext';
 import { Send, MoreVertical, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -16,10 +16,10 @@ export default function Home() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentModel, setCurrentModel] = useState(MODELS[0].id);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  // Use SidebarContext
+  const { isCollapsed, isMobile, setMobileOpen } = useSidebar();
 
   const currentThread = useMemo(() =>
     chatHistory.find(c => c.id === currentChatId),
@@ -42,7 +42,7 @@ export default function Home() {
   const handleNewChat = () => {
     setCurrentChatId(null);
     setInput('');
-    if (isMobile) setIsSidebarOpen(false);
+    if (isMobile) setMobileOpen(false);
   };
 
   const handleSelectChat = (id: string) => {
@@ -51,7 +51,7 @@ export default function Home() {
     if (thread) {
       setCurrentModel(thread.modelId);
     }
-    if (isMobile) setIsSidebarOpen(false);
+    if (isMobile) setMobileOpen(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -152,39 +152,34 @@ export default function Home() {
     }
   };
 
+  // Determine margin based on context
+  // On mobile (md:hidden), margin is 0 (md:pl-0 overrides nothing, but we want ml-0).
+  // On desktop (md:block), margin depends on isCollapsed.
+  // Tailwind doesn't support dynamic arbitrary values in class names easily without inline styles or clsx/style.
+  // We can use style prop.
+
+  const mainContentStyle = {
+    marginLeft: isMobile ? 0 : (isCollapsed ? '80px' : '260px'),
+    transition: 'margin-left 0.3s ease-in-out'
+  };
+
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
       <Sidebar
         chatHistory={chatHistory}
         onSelectChat={handleSelectChat}
         onNewChat={handleNewChat}
-        isMobile={isMobile}
-        isOpen={isSidebarOpen}
-        setIsOpen={setIsSidebarOpen}
       />
 
       {/* Main Content Area */}
-      {/*
-          Issue Fix: Ensure main content margin accounts for Sidebar width.
-          Sidebar is 260px when open (desktop default) and 80px when collapsed.
-          Since Sidebar state is internal, we can't easily adjust margin purely via CSS unless we lift state
-          or assume a default.
-          The Sidebar component defaults to `isCollapsed = false`. So width is 260px.
-          But the CSS below hardcodes `margin-left: 80px`?
-          Wait, I wrote `.main-content { margin-left: 80px; }` in previous steps.
-          If Sidebar is 260px, it overlaps 180px of content.
-          I need to adjust the margin to 260px by default for desktop.
-          Or better, lift the collapsed state to this parent to control margin dynamically.
-          For now, I will set margin to 260px (expanded) as that's the default state in Sidebar.tsx.
-          Wait, Sidebar.tsx has `const [isCollapsed, setIsCollapsed] = useState(false);`
-          So it starts OPEN.
-          So margin needs to be 260px.
-      */}
-      <div className="flex-1 flex flex-col h-full relative transition-all duration-300 md:ml-[260px] lg:ml-[260px] xl:ml-[260px] md:pl-0">
+      <div
+        className="flex-1 flex flex-col h-full relative"
+        style={mainContentStyle}
+      >
 
           {/* Mobile Header */}
           <div className="md:hidden flex items-center p-4 border-b border-border bg-card">
-              <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 hover:bg-muted rounded-md">
+              <button onClick={() => setMobileOpen(true)} className="p-2 -ml-2 hover:bg-muted rounded-md">
                   <MoreVertical size={20} />
               </button>
               <span className="ml-2 font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
