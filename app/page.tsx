@@ -125,7 +125,7 @@ export default function Home() {
         // If last message is AI, update it, else add it
         const lastMsg = currentMessages[currentMessages.length - 1];
         if (lastMsg.role === 'assistant') {
-             lastMsg.content = aiContent;
+             currentMessages[currentMessages.length - 1] = { ...lastMsg, content: aiContent };
         } else {
              currentMessages.push({ role: 'assistant', content: aiContent });
         }
