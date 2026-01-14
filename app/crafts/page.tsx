@@ -7,7 +7,7 @@ import { useLocalStorage, Craft, ChatThread, ChatMessage } from '@/app/hooks/use
 import { Plus, Trash2, ArrowLeft, Bot, Send, Loader2, Menu, MoreVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageBubble } from '@/app/components/MessageBubble';
-import { useMediaQuery } from '@/app/hooks/useMediaQuery';
+import { useSidebar } from '@/app/contexts/SidebarContext';
 
 function BotIcon() {
     return (
@@ -41,8 +41,8 @@ export default function CraftsPage() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  // Use SidebarContext
+  const { isCollapsed, isMobile, setMobileOpen } = useSidebar();
 
   const currentThread = chatHistory.find(t => t.title === `Craft: ${selectedCraft?.name}`);
   const messages = currentThread ? currentThread.messages : [];
@@ -151,28 +151,26 @@ export default function CraftsPage() {
     }
   };
 
+  const mainContentStyle = {
+    marginLeft: isMobile ? 0 : (isCollapsed ? '80px' : '260px'),
+    transition: 'margin-left 0.3s ease-in-out'
+  };
+
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
       <Sidebar
         chatHistory={chatHistory}
         onSelectChat={() => {}}
         onNewChat={() => setSelectedCraftId(null)}
-        isMobile={isMobile}
-        isOpen={isSidebarOpen}
-        setIsOpen={setIsSidebarOpen}
       />
 
-      <div className="flex-1 flex flex-col h-full relative transition-all duration-300 md:ml-[260px] lg:ml-[260px] xl:ml-[260px] md:pl-0">
-         <style jsx global>{`
-            @media (min-width: 768px) {
-              .main-content { margin-left: 80px; }
-              .sidebar-expanded + .main-content { margin-left: 260px; }
-            }
-          `}</style>
-
+      <div
+        className="flex-1 flex flex-col h-full relative"
+        style={mainContentStyle}
+      >
         {/* Mobile Header (Crafts) */}
          <div className="md:hidden flex items-center p-4 border-b border-border bg-card">
-              <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 hover:bg-muted rounded-md">
+              <button onClick={() => setMobileOpen(true)} className="p-2 -ml-2 hover:bg-muted rounded-md">
                   <MoreVertical size={20} />
               </button>
               <span className="ml-2 font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
