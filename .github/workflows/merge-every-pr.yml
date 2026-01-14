@@ -1,11 +1,11 @@
-name: Merge Every PR
+name: Auto-merge Drafts and PRs
 
 on:
   pull_request:
-    # This triggers on every new PR or update to a PR targeting main
     branches:
+      # Your specific default branch
       - atonin-ai-feature-complete-16630192008413985243
-    types: [opened, synchronize]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 jobs:
   auto-merge-all:
@@ -17,11 +17,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Merge PR immediately
+      - name: Undraft and Merge
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Try to merge immediately. 
-          # If checks are required, --auto will wait for them to pass first.
-          gh pr merge ${{ github.event.pull_request.number }} --merge --auto || gh pr merge ${{ github.event.pull_request.number }} --merge
+          # 1. Force the PR to be "Ready for Review" (removes Draft status)
+          # We use "|| true" so it doesn't fail if the PR is already ready.
+          gh pr ready ${{ github.event.pull_request.number }} || true
+          
+          # 2. Now Merge it
+          gh pr merge ${{ github.event.pull_request.number }} --merge --auto
           
