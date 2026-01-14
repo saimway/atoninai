@@ -7,45 +7,65 @@
 - Network:       http://192.168.0.2:3000
 
 ✓ Starting...
-✓ Ready in 1154ms
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+✓ Ready in 1142ms
 ○ Compiling / ...
-⨯ Error: useTheme must be used within a ThemeProvider
-    at useTheme (app/contexts/ThemeContext.tsx:74:11)
-    at Sidebar (app/components/Sidebar.tsx:21:39)
-  72 |   const context = useContext(ThemeContext);
-  73 |   if (context === undefined) {
-> 74 |     throw new Error('useTheme must be used within a ThemeProvider');
-     |           ^
-  75 |   }
-  76 |   return context;
-  77 | } {
-  digest: '1357168831'
+ GET / 200 in 11.3s (compile: 9.9s, render: 1451ms)
+⨯ Error: The GROQ_API_KEY environment variable is missing or empty; either provide it, or instantiate the Groq client with an apiKey option, like new Groq({ apiKey: 'My API Key' }).
+    at module evaluation (app/api/chat/route.ts:4:14)
+    at Object.<anonymous> (.next/dev/server/app/api/chat/route.js:8:3)
+  2 | import { NextRequest, NextResponse } from 'next/server';
+  3 |
+> 4 | const groq = new Groq({
+    |              ^
+  5 |   apiKey: process.env.GROQ_API_KEY,
+  6 | });
+  7 | {
+  page: '/api/chat'
 }
- GET / 500 in 4.9s (compile: 4.4s, render: 419ms)
-⨯ Error: useTheme must be used within a ThemeProvider
-    at useTheme (app/contexts/ThemeContext.tsx:74:11)
-    at Sidebar (app/components/Sidebar.tsx:21:39)
-  72 |   const context = useContext(ThemeContext);
-  73 |   if (context === undefined) {
-> 74 |     throw new Error('useTheme must be used within a ThemeProvider');
-     |           ^
-  75 |   }
-  76 |   return context;
-  77 | } {
-  digest: '1537349659'
+ GET / 200 in 123ms (compile: 14ms, render: 110ms)
+⨯ Error: The GROQ_API_KEY environment variable is missing or empty; either provide it, or instantiate the Groq client with an apiKey option, like new Groq({ apiKey: 'My API Key' }).
+    at module evaluation (app/api/chat/route.ts:4:14)
+    at Object.<anonymous> (.next/dev/server/app/api/chat/route.js:8:3)
+  2 | import { NextRequest, NextResponse } from 'next/server';
+  3 |
+> 4 | const groq = new Groq({
+    |              ^
+  5 |   apiKey: process.env.GROQ_API_KEY,
+  6 | });
+  7 | {
+  page: '/api/chat'
 }
- GET /crafts 500 in 1133ms (compile: 1016ms, render: 117ms)
- GET / 200 in 273ms (compile: 101ms, render: 173ms)
- GET / 200 in 78ms (compile: 6ms, render: 72ms)
- GET / 200 in 368ms (compile: 97ms, render: 271ms)
- GET / 200 in 627ms (compile: 314ms, render: 313ms)
- GET /crafts 200 in 490ms (compile: 247ms, render: 244ms)
- GET / 200 in 88ms (compile: 9ms, render: 79ms)
- GET /crafts 200 in 73ms (compile: 7ms, render: 66ms)
- GET / 200 in 80ms (compile: 8ms, render: 72ms)
- GET /crafts 200 in 379ms (compile: 201ms, render: 178ms)
- GET / 200 in 2.7s (compile: 1496ms, render: 1162ms)
- GET / 200 in 528ms (compile: 236ms, render: 292ms)
- GET /crafts 200 in 434ms (compile: 163ms, render: 271ms)
-○ Compiling /verify ...
- GET /verify 200 in 8.3s (compile: 5.8s, render: 2.5s)
+ POST /api/chat 500 in 250ms (compile: 230ms, render: 20ms)
+ GET / 200 in 813ms (compile: 95ms, render: 718ms)
+⨯ Error: The GROQ_API_KEY environment variable is missing or empty; either provide it, or instantiate the Groq client with an apiKey option, like new Groq({ apiKey: 'My API Key' }).
+    at module evaluation (app/api/chat/route.ts:4:14)
+    at Object.<anonymous> (.next/dev/server/app/api/chat/route.js:8:3)
+  2 | import { NextRequest, NextResponse } from 'next/server';
+  3 |
+> 4 | const groq = new Groq({
+    |              ^
+  5 |   apiKey: process.env.GROQ_API_KEY,
+  6 | });
+  7 | {
+  page: '/api/chat'
+}
+ POST /api/chat 500 in 108ms (compile: 91ms, render: 17ms)
+ GET / 200 in 673ms (compile: 87ms, render: 586ms)
+⨯ Error: The GROQ_API_KEY environment variable is missing or empty; either provide it, or instantiate the Groq client with an apiKey option, like new Groq({ apiKey: 'My API Key' }).
+    at module evaluation (app/api/chat/route.ts:4:14)
+    at Object.<anonymous> (.next/dev/server/app/api/chat/route.js:8:3)
+  2 | import { NextRequest, NextResponse } from 'next/server';
+  3 |
+> 4 | const groq = new Groq({
+    |              ^
+  5 |   apiKey: process.env.GROQ_API_KEY,
+  6 | });
+  7 | {
+  page: '/api/chat'
+}
+ POST /api/chat 500 in 126ms (compile: 115ms, render: 11ms)

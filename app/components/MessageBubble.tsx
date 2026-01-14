@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { ChatMessage } from '@/app/hooks/useLocalStorage';
 import { cn } from '@/lib/utils';
@@ -9,7 +10,7 @@ interface MessageBubbleProps {
   message: ChatMessage;
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
 
@@ -77,4 +78,4 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       </div>
     </motion.div>
   );
-}
+});
