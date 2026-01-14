@@ -4,7 +4,7 @@ on:
   pull_request:
     # This triggers on every new PR or update to a PR targeting main
     branches:
-      - main
+      - atonin-ai-feature-complete-16630192008413985243
     types: [opened, synchronize]
 
 jobs:
