@@ -10,6 +10,7 @@ import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 import { useSidebar } from '@/app/contexts/SidebarContext';
 import { Send, MoreVertical, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { AutoResizeTextarea } from '@/app/components/AutoResizeTextarea';
 
 export default function Home() {
   const { chatHistory, setChatHistory, crafts, setCrafts } = useLocalStorage();
@@ -57,8 +58,8 @@ export default function Home() {
     if (isMobile) setIsSidebarOpen(false);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!input.trim() || isLoading) return;
 
     const userMessage: ChatMessage = { role: 'user', content: input.trim() };
@@ -238,19 +239,19 @@ export default function Home() {
 
           {/* Input Area */}
           <div className="p-4 bg-background border-t border-border">
-              <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative">
-                  <input
-                      type="text"
+              <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative flex items-end bg-muted rounded-2xl ring-offset-background focus-within:ring-2 focus-within:ring-primary/50 transition-shadow">
+                  <AutoResizeTextarea
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
+                      onEnter={() => handleSubmit()}
                       placeholder="Message Atonin..."
                       disabled={isLoading}
-                      className="w-full bg-muted text-foreground placeholder-muted-foreground rounded-2xl py-3 pl-5 pr-12 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+                      className="w-full bg-transparent text-foreground placeholder-muted-foreground py-3 pl-5 pr-12 max-h-[200px]"
                   />
                   <button
                       type="submit"
                       disabled={!input.trim() || isLoading}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary text-primary-foreground rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                      className="absolute right-2 bottom-2 p-2 bg-primary text-primary-foreground rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
                   >
                       <Send size={18} />
                   </button>
