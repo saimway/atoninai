@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, Eye, Code } from 'lucide-react';
 
 interface CodeBlockProps {
   language: string;
@@ -12,6 +12,9 @@ interface CodeBlockProps {
 
 export function CodeBlock({ language, value }: CodeBlockProps) {
   const [isCopied, setIsCopied] = useState(false);
+  const [view, setView] = useState<'code' | 'preview'>('code');
+
+  const isPreviewable = ['html', 'svg'].includes(language?.toLowerCase());
 
   const copyToClipboard = async () => {
     if (!navigator.clipboard) return;
@@ -27,7 +30,27 @@ export function CodeBlock({ language, value }: CodeBlockProps) {
   return (
     <div className="rounded-lg overflow-hidden my-4 border border-border bg-zinc-950">
       <div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800">
-        <span className="text-xs font-medium text-zinc-400 lowercase">{language || 'code'}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-medium text-zinc-400 lowercase">{language || 'code'}</span>
+          {isPreviewable && (
+            <div className="flex items-center gap-1 bg-zinc-800 rounded p-0.5">
+              <button
+                onClick={() => setView('code')}
+                className={`p-1 rounded ${view === 'code' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-300'}`}
+                title="Code"
+              >
+                <Code size={14} />
+              </button>
+              <button
+                onClick={() => setView('preview')}
+                className={`p-1 rounded ${view === 'preview' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-300'}`}
+                title="Preview"
+              >
+                <Eye size={14} />
+              </button>
+            </div>
+          )}
+        </div>
         <button
           onClick={copyToClipboard}
           className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
@@ -45,21 +68,41 @@ export function CodeBlock({ language, value }: CodeBlockProps) {
           )}
         </button>
       </div>
-      <div className="overflow-x-auto">
-        <SyntaxHighlighter
-          language={language}
-          style={oneDark}
-          customStyle={{
-            margin: 0,
-            padding: '1rem',
-            background: 'transparent',
-            fontSize: '0.875rem',
-          }}
-          wrapLongLines={true}
-        >
-          {value}
-        </SyntaxHighlighter>
-      </div>
+
+      {view === 'preview' && isPreviewable ? (
+        <div className="bg-white p-4 overflow-auto min-h-[100px] flex items-center justify-center checkered-bg">
+           {language.toLowerCase() === 'html' && (
+             <iframe
+                srcDoc={value}
+                className="w-full border-none h-[300px]"
+                title="Preview"
+                sandbox="allow-scripts"
+             />
+           )}
+           {language.toLowerCase() === 'svg' && (
+             <div
+               dangerouslySetInnerHTML={{ __html: value }}
+               className="flex items-center justify-center w-full"
+             />
+           )}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <SyntaxHighlighter
+            language={language}
+            style={oneDark}
+            customStyle={{
+              margin: 0,
+              padding: '1rem',
+              background: 'transparent',
+              fontSize: '0.875rem',
+            }}
+            wrapLongLines={true}
+          >
+            {value}
+          </SyntaxHighlighter>
+        </div>
+      )}
     </div>
   );
 }
