@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { SidebarItem } from './SidebarItem';
-import { MessageSquare, Hammer, Settings, Menu, X, Plus } from 'lucide-react';
+import { MessageSquare, Hammer, Settings, Menu, X, Plus, Search, Trash2 } from 'lucide-react';
 import { useSidebar } from '@/app/contexts/SidebarContext';
 import { ChatThread, Craft } from '@/app/hooks/useLocalStorage';
 import { SettingsModal } from './SettingsModal';
+import { cn } from '@/lib/utils';
 
 interface SidebarProps {
   chatHistory: ChatThread[];
@@ -18,6 +19,7 @@ interface SidebarProps {
   isMobile: boolean;
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
+  currentChatId?: string | null;
 }
 
 export default function Sidebar({
@@ -29,16 +31,26 @@ export default function Sidebar({
   onNewChat,
   isMobile,
   isOpen,
-  setIsOpen
+  setIsOpen,
+  currentChatId
 }: SidebarProps) {
   const { isCollapsed, toggleSidebar } = useSidebar();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleToggle = () => {
     if (isMobile) {
       setIsOpen(!isOpen);
     } else {
       toggleSidebar();
+    }
+  };
+
+  const handleDeleteChat = (e: React.MouseEvent, chatId: string) => {
+    e.stopPropagation();
+    if (confirm('Are you sure you want to delete this chat?')) {
+        const newHistory = chatHistory.filter(c => c.id !== chatId);
+        setChatHistory(newHistory);
     }
   };
 
@@ -52,6 +64,41 @@ export default function Sidebar({
   const currentVariant = isMobile
     ? (isOpen ? 'mobileOpen' : 'mobileClosed')
     : (isCollapsed ? 'collapsed' : 'open');
+
+  // Filter and Group Chats
+  const groupedChats = useMemo(() => {
+    const filtered = chatHistory.filter(chat =>
+      chat.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const groups: { [key: string]: ChatThread[] } = {
+      'Today': [],
+      'Yesterday': [],
+      'Previous 7 Days': [],
+      'Older': []
+    };
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const yesterday = today - 86400000;
+    const lastWeek = today - 7 * 86400000;
+
+    filtered.forEach(chat => {
+      const chatDate = new Date(chat.updatedAt || chat.createdAt).getTime();
+
+      if (chatDate >= today) {
+        groups['Today'].push(chat);
+      } else if (chatDate >= yesterday) {
+        groups['Yesterday'].push(chat);
+      } else if (chatDate >= lastWeek) {
+        groups['Previous 7 Days'].push(chat);
+      } else {
+        groups['Older'].push(chat);
+      }
+    });
+
+    return groups;
+  }, [chatHistory, searchQuery]);
 
   return (
     <>
@@ -89,7 +136,7 @@ export default function Sidebar({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-4 px-2 space-y-2">
+        <div className="flex-1 overflow-y-auto py-4 px-2 flex flex-col gap-2">
            <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -100,29 +147,77 @@ export default function Sidebar({
             {!isCollapsed && <span className="font-medium text-sm">New Chat</span>}
           </motion.button>
 
-          <div className="my-4 border-t border-border" />
+          <div className="my-2 border-t border-border" />
 
           <SidebarItem icon={MessageSquare} label="Chats" href="/" isCollapsed={isCollapsed} />
           <SidebarItem icon={Hammer} label="Crafts" href="/crafts" isCollapsed={isCollapsed} />
 
-          <div className="my-4 border-t border-border" />
+          <div className="my-2 border-t border-border" />
 
-          {!isCollapsed && <div className="px-3 pb-2 text-xs font-semibold text-muted-foreground uppercase">Recent</div>}
+          {/* Search Bar */}
+          {!isCollapsed && (
+             <div className="px-2 mb-2 relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
+                <input
+                  type="text"
+                  placeholder="Search chats..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-muted/50 border border-transparent focus:border-border rounded-md py-1.5 pl-8 pr-2 text-sm focus:outline-none transition-colors"
+                />
+             </div>
+          )}
 
-          <div className="space-y-1">
-            {chatHistory.slice(0, 5).map((chat) => (
-              <button
-                key={chat.id}
-                onClick={() => onSelectChat(chat.id)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground truncate transition-colors ${isCollapsed ? 'hidden' : 'block'}`}
-              >
-                {chat.title}
-              </button>
-            ))}
+          {/* Chat List */}
+          <div className="flex-1 overflow-y-auto space-y-4 px-1 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+            {Object.entries(groupedChats).map(([group, chats]) => {
+                if (chats.length === 0) return null;
+
+                return (
+                    <div key={group} className={isCollapsed ? 'hidden' : 'block'}>
+                        <div className="px-3 pb-2 text-xs font-semibold text-muted-foreground uppercase sticky top-0 bg-card z-10">{group}</div>
+                        <div className="space-y-0.5">
+                            {chats.map(chat => (
+                                <button
+                                    key={chat.id}
+                                    onClick={() => onSelectChat(chat.id)}
+                                    className={cn(
+                                        "group flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-sm truncate transition-colors",
+                                        currentChatId === chat.id
+                                            ? "bg-muted text-foreground font-medium"
+                                            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                    )}
+                                >
+                                    <span className="truncate flex-1 mr-2">{chat.title || 'Untitled Chat'}</span>
+                                    <div
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={(e) => handleDeleteChat(e, chat.id)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                handleDeleteChat(e as any, chat.id);
+                                            }
+                                        }}
+                                        className={cn(
+                                            "p-1 hover:bg-red-500/10 hover:text-red-500 rounded transition-all shrink-0",
+                                            // Always visible on mobile (or generally), simpler UX than hover
+                                            "opacity-50 hover:opacity-100 focus:opacity-100"
+                                        )}
+                                        title="Delete chat"
+                                        aria-label="Delete chat"
+                                    >
+                                        <Trash2 size={14} />
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                );
+            })}
           </div>
         </div>
 
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-border mt-auto">
           <button
             onClick={() => setIsSettingsOpen(true)}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors ${isCollapsed ? 'justify-center' : ''}`}

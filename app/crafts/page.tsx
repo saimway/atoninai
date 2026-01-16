@@ -8,6 +8,7 @@ import { Plus, Trash2, ArrowLeft, Bot, Send, Loader2, Menu, MoreVertical } from 
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageBubble } from '@/app/components/MessageBubble';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
+import { useRouter } from 'next/navigation';
 
 function BotIcon() {
     return (
@@ -43,6 +44,7 @@ export default function CraftsPage() {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const isMobile = useMediaQuery('(max-width: 768px)');
+  const router = useRouter();
 
   const currentThread = chatHistory.find(t => t.title === `Craft: ${selectedCraft?.name}`);
   const messages = currentThread ? currentThread.messages : [];
@@ -158,11 +160,14 @@ export default function CraftsPage() {
         setChatHistory={setChatHistory}
         crafts={crafts}
         setCrafts={setCrafts}
-        onSelectChat={() => {}}
+        onSelectChat={(chatId) => {
+          router.push(`/?chatId=${chatId}`);
+        }}
         onNewChat={() => setSelectedCraftId(null)}
         isMobile={isMobile}
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
+        currentChatId={null}
       />
 
       <div className="flex-1 flex flex-col h-full relative transition-all duration-300 md:ml-[260px] lg:ml-[260px] xl:ml-[260px] md:pl-0">
