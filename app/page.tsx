@@ -168,6 +168,7 @@ export default function Home() {
         isMobile={isMobile}
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
+        currentChatId={currentChatId}
       />
 
       {/* Main Content Area */}
