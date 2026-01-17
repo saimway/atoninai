@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { SidebarItem } from './SidebarItem';
 import { MessageSquare, Hammer, Settings, Menu, X, Plus, Search, Trash2 } from 'lucide-react';
 import { useSidebar } from '@/app/contexts/SidebarContext';
@@ -46,7 +46,7 @@ export default function Sidebar({
     }
   };
 
-  const handleDeleteChat = (e: React.MouseEvent, chatId: string) => {
+  const handleDeleteChat = (e: React.MouseEvent | React.KeyboardEvent, chatId: string) => {
     e.stopPropagation();
     if (confirm('Are you sure you want to delete this chat?')) {
         const newHistory = chatHistory.filter(c => c.id !== chatId);
@@ -195,7 +195,7 @@ export default function Sidebar({
                                         onClick={(e) => handleDeleteChat(e, chat.id)}
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter' || e.key === ' ') {
-                                                handleDeleteChat(e as any, chat.id);
+                                                handleDeleteChat(e, chat.id);
                                             }
                                         }}
                                         className={cn(

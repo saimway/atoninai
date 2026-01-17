@@ -12,14 +12,13 @@ const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('atonin_sidebar_collapsed');
     if (saved) {
-      setIsCollapsed(JSON.parse(saved));
+      // Use setTimeout to avoid synchronous setState warning
+      setTimeout(() => setIsCollapsed(JSON.parse(saved)), 0);
     }
-    setIsInitialized(true);
   }, []);
 
   const toggleSidebar = () => {
