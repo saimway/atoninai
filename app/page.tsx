@@ -58,6 +58,84 @@ export default function Home() {
     if (isMobile) setIsSidebarOpen(false);
   };
 
+  const handleRegenerate = async () => {
+    if (isLoading || !currentChatId) return;
+
+    const threadIndex = chatHistory.findIndex(t => t.id === currentChatId);
+    if (threadIndex === -1) return;
+
+    const thread = chatHistory[threadIndex];
+    const msgs = thread.messages;
+
+    if (msgs.length === 0 || msgs[msgs.length - 1].role !== 'assistant') return;
+
+    setIsLoading(true);
+
+    // Remove the last assistant message
+    const newMessages = msgs.slice(0, -1);
+
+    const newHistory = [...chatHistory];
+    newHistory[threadIndex] = {
+        ...thread,
+        messages: newMessages,
+        updatedAt: Date.now()
+    };
+    setChatHistory(newHistory);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: newMessages,
+          modelId: currentModel,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch response');
+      if (!response.body) throw new Error('No response body');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let aiContent = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value, { stream: true });
+        aiContent += text;
+
+        const currentThreadIndex = newHistory.findIndex(t => t.id === currentChatId);
+        const currentMessages = [...newHistory[currentThreadIndex].messages];
+        const lastMsg = currentMessages[currentMessages.length - 1];
+
+        if (lastMsg && lastMsg.role === 'assistant') {
+             lastMsg.content = aiContent;
+        } else {
+             currentMessages.push({ role: 'assistant', content: aiContent });
+        }
+
+        newHistory[currentThreadIndex] = {
+            ...newHistory[currentThreadIndex],
+            messages: currentMessages,
+        };
+        setChatHistory([...newHistory]);
+      }
+    } catch (error) {
+      console.error(error);
+       const currentThreadIndex = newHistory.findIndex(t => t.id === currentChatId);
+      if (currentThreadIndex > -1) {
+          const msgs = [...newHistory[currentThreadIndex].messages];
+          msgs.push({ role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' });
+          newHistory[currentThreadIndex].messages = msgs;
+          setChatHistory(newHistory);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -216,7 +294,15 @@ export default function Home() {
               ) : (
                   <>
                       {messages.map((msg, idx) => (
-                          <MessageBubble key={idx} message={msg} />
+                          <MessageBubble
+                            key={idx}
+                            message={msg}
+                            onRegenerate={
+                                (!isLoading && idx === messages.length - 1 && msg.role === 'assistant')
+                                ? handleRegenerate
+                                : undefined
+                            }
+                          />
                       ))}
                       {isLoading && messages[messages.length - 1]?.role === 'user' && (
                           <motion.div

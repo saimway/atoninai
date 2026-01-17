@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Sidebar from '@/app/components/Sidebar';
 import { useLocalStorage, Craft, ChatThread, ChatMessage } from '@/app/hooks/useLocalStorage';
-import { Plus, Trash2, ArrowLeft, Bot, Send, Loader2, Menu, MoreVertical } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Bot, Send, Loader2, MoreVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageBubble } from '@/app/components/MessageBubble';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
