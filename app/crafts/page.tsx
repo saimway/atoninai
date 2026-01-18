@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Sidebar from '@/app/components/Sidebar';
 import { useLocalStorage, Craft, ChatThread, ChatMessage } from '@/app/hooks/useLocalStorage';
-import { Plus, Trash2, ArrowLeft, Bot, Send, Loader2, MoreVertical } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Bot, Send, Loader2, MoreVertical, Pencil, Copy, Eraser } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageBubble } from '@/app/components/MessageBubble';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
@@ -32,7 +32,8 @@ function BotIcon() {
 
 export default function CraftsPage() {
   const { crafts, setCrafts, chatHistory, setChatHistory } = useLocalStorage();
-  const [isCreating, setIsCreating] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCraftId, setEditingCraftId] = useState<string | null>(null);
   const [newCraftName, setNewCraftName] = useState('');
   const [newCraftInstruction, setNewCraftInstruction] = useState('');
 
@@ -49,21 +50,77 @@ export default function CraftsPage() {
   const currentThread = chatHistory.find(t => t.title === `Craft: ${selectedCraft?.name}`);
   const messages = currentThread ? currentThread.messages : [];
 
-  const handleCreateCraft = (e: React.FormEvent) => {
+  const handleClearChat = () => {
+      if (!selectedCraft || !currentThread) return;
+      if (confirm('Are you sure you want to clear this chat history?')) {
+          const updatedHistory = chatHistory.filter(t => t.id !== currentThread.id);
+          setChatHistory(updatedHistory);
+      }
+  };
+
+  const handleSaveCraft = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCraftName || !newCraftInstruction) return;
 
-    const newCraft: Craft = {
-      id: uuidv4(),
-      name: newCraftName,
-      systemInstruction: newCraftInstruction,
-      createdAt: Date.now(),
-    };
+    if (editingCraftId) {
+        const oldCraft = crafts.find(c => c.id === editingCraftId);
+        if (oldCraft) {
+            const updatedCrafts = crafts.map(c =>
+                c.id === editingCraftId
+                ? { ...c, name: newCraftName, systemInstruction: newCraftInstruction }
+                : c
+            );
+            setCrafts(updatedCrafts);
 
-    setCrafts([...crafts, newCraft]);
-    setIsCreating(false);
+            // Update chat thread title if exists
+            const oldTitle = `Craft: ${oldCraft.name}`;
+            const newTitle = `Craft: ${newCraftName}`;
+
+            const updatedHistory = chatHistory.map(t =>
+                t.title === oldTitle ? { ...t, title: newTitle } : t
+            );
+            setChatHistory(updatedHistory);
+        }
+    } else {
+        const newCraft: Craft = {
+          id: uuidv4(),
+          name: newCraftName,
+          systemInstruction: newCraftInstruction,
+          createdAt: Date.now(),
+        };
+        setCrafts([...crafts, newCraft]);
+    }
+
+    setIsModalOpen(false);
     setNewCraftName('');
     setNewCraftInstruction('');
+    setEditingCraftId(null);
+  };
+
+  const handleDuplicateCraft = (craft: Craft, e: React.MouseEvent) => {
+      e.stopPropagation();
+      const newCraft: Craft = {
+          id: uuidv4(),
+          name: `${craft.name} (Copy)`,
+          systemInstruction: craft.systemInstruction,
+          createdAt: Date.now(),
+      };
+      setCrafts([...crafts, newCraft]);
+  };
+
+  const openCreateModal = () => {
+      setNewCraftName('');
+      setNewCraftInstruction('');
+      setEditingCraftId(null);
+      setIsModalOpen(true);
+  };
+
+  const openEditModal = (craft: Craft, e: React.MouseEvent) => {
+      e.stopPropagation();
+      setNewCraftName(craft.name);
+      setNewCraftInstruction(craft.systemInstruction);
+      setEditingCraftId(craft.id);
+      setIsModalOpen(true);
   };
 
   const handleDeleteCraft = (id: string, e: React.MouseEvent) => {
@@ -193,7 +250,7 @@ export default function CraftsPage() {
              <div className="flex items-center gap-4">
                  <h1 className="text-xl font-bold">My Crafts</h1>
                  <button
-                    onClick={() => setIsCreating(true)}
+                    onClick={openCreateModal}
                     className="flex items-center gap-2 px-3 py-1 bg-primary text-primary-foreground rounded-lg text-sm hover:opacity-90 transition-opacity"
                  >
                      <Plus size={16} /> New Craft
@@ -215,14 +272,26 @@ export default function CraftsPage() {
                         exit={{ opacity: 0, x: -20 }}
                         className="h-full flex flex-col"
                     >
-                        <div className="flex items-center p-3 border-b border-border bg-muted/30">
-                            <button onClick={() => setSelectedCraftId(null)} className="p-2 hover:bg-muted rounded-full mr-2">
-                                <ArrowLeft size={20} />
-                            </button>
-                            <div>
-                                <h3 className="font-bold">{selectedCraft?.name}</h3>
-                                <p className="text-xs text-muted-foreground">Custom Assistant</p>
+                        <div className="flex items-center justify-between p-3 border-b border-border bg-muted/30">
+                            <div className="flex items-center">
+                                <button onClick={() => setSelectedCraftId(null)} className="p-2 hover:bg-muted rounded-full mr-2">
+                                    <ArrowLeft size={20} />
+                                </button>
+                                <div>
+                                    <h3 className="font-bold">{selectedCraft?.name}</h3>
+                                    <p className="text-xs text-muted-foreground">Custom Assistant</p>
+                                </div>
                             </div>
+                            {messages.length > 0 && (
+                                <button
+                                    onClick={handleClearChat}
+                                    className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors flex items-center gap-2 text-sm"
+                                    title="Clear Chat"
+                                >
+                                    <Eraser size={18} />
+                                    <span className="hidden sm:inline">Clear Chat</span>
+                                </button>
+                            )}
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -285,12 +354,29 @@ export default function CraftsPage() {
                                         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white">
                                             <Bot size={24} />
                                         </div>
-                                        <button
-                                            onClick={(e) => handleDeleteCraft(craft.id, e)}
-                                            className="text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
+                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 backdrop-blur-sm rounded-lg p-1">
+                                            <button
+                                                onClick={(e) => handleDuplicateCraft(craft, e)}
+                                                className="p-1.5 text-muted-foreground hover:text-blue-500 hover:bg-muted rounded-md"
+                                                title="Duplicate"
+                                            >
+                                                <Copy size={16} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => openEditModal(craft, e)}
+                                                className="p-1.5 text-muted-foreground hover:text-primary hover:bg-muted rounded-md"
+                                                title="Edit"
+                                            >
+                                                <Pencil size={16} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => handleDeleteCraft(craft.id, e)}
+                                                className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-muted rounded-md"
+                                                title="Delete"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </div>
                                     <h3 className="font-bold text-lg mb-2">{craft.name}</h3>
                                     <p className="text-sm text-muted-foreground line-clamp-3">
@@ -301,7 +387,7 @@ export default function CraftsPage() {
 
                             <motion.button
                                 whileHover={{ scale: 1.02 }}
-                                onClick={() => setIsCreating(true)}
+                                onClick={openCreateModal}
                                 className="border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors min-h-[200px]"
                             >
                                 <Plus size={32} className="mb-2" />
@@ -313,9 +399,9 @@ export default function CraftsPage() {
             </AnimatePresence>
         </div>
 
-        {/* Create Modal */}
+        {/* Create/Edit Modal */}
         <AnimatePresence>
-            {isCreating && (
+            {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
@@ -324,8 +410,8 @@ export default function CraftsPage() {
                         className="bg-card border border-border w-full max-w-md rounded-2xl shadow-xl overflow-hidden"
                     >
                         <div className="p-6">
-                            <h2 className="text-xl font-bold mb-4">Create New Craft</h2>
-                            <form onSubmit={handleCreateCraft}>
+                            <h2 className="text-xl font-bold mb-4">{editingCraftId ? 'Edit Craft' : 'Create New Craft'}</h2>
+                            <form onSubmit={handleSaveCraft}>
                                 <div className="space-y-4">
                                     <div>
                                         <label className="text-sm font-medium text-muted-foreground mb-1 block">Name</label>
@@ -352,7 +438,7 @@ export default function CraftsPage() {
                                 <div className="flex justify-end gap-3 mt-6">
                                     <button
                                         type="button"
-                                        onClick={() => setIsCreating(false)}
+                                        onClick={() => setIsModalOpen(false)}
                                         className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-lg transition-colors"
                                     >
                                         Cancel
@@ -361,7 +447,7 @@ export default function CraftsPage() {
                                         type="submit"
                                         className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
                                     >
-                                        Create Craft
+                                        {editingCraftId ? 'Save Changes' : 'Create Craft'}
                                     </button>
                                 </div>
                             </form>

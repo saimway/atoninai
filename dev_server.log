@@ -12,6 +12,26 @@ This information is used to shape Next.js' roadmap and prioritize features.
 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
 https://nextjs.org/telemetry
 
-✓ Ready in 1077ms
+✓ Ready in 1168ms
 ○ Compiling / ...
- GET / 200 in 11.5s (compile: 9.8s, render: 1658ms)
+ GET / 200 in 11.4s (compile: 9.8s, render: 1633ms)
+ GET / 200 in 95ms (compile: 8ms, render: 87ms)
+ GET /crafts 200 in 1886ms (compile: 1846ms, render: 40ms)
+ GET / 200 in 102ms (compile: 6ms, render: 96ms)
+ GET /crafts 200 in 42ms (compile: 6ms, render: 36ms)
+ GET / 200 in 102ms (compile: 7ms, render: 95ms)
+ GET /crafts 200 in 30ms (compile: 5ms, render: 25ms)
+ GET / 200 in 90ms (compile: 5ms, render: 85ms)
+ GET /crafts 200 in 36ms (compile: 7ms, render: 29ms)
+ GET / 200 in 71ms (compile: 7ms, render: 64ms)
+ GET /crafts 200 in 32ms (compile: 5ms, render: 26ms)
+Error in chat API: SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>)
+    at POST (app/api/chat/route.ts:10:64)
+   8 | export async function POST(req: NextRequest) {
+   9 |   try {
+> 10 |     const { messages, modelId, systemInstruction } = await req.json();
+     |                                                                ^
+  11 |
+  12 |     if (!modelId) {
+  13 |       return NextResponse.json({ error: 'Model ID is required' }, { status: 400 });
