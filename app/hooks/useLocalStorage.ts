@@ -12,6 +12,7 @@ export interface ChatThread {
   createdAt: number;
   updatedAt: number;
   modelId: string;
+  isFavorite?: boolean;
 }
 
 export interface Craft {
