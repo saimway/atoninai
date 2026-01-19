@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { SidebarItem } from './SidebarItem';
-import { MessageSquare, Hammer, Settings, Menu, X, Plus, Search, Trash2 } from 'lucide-react';
+import { MessageSquare, Hammer, Settings, Menu, X, Plus, Search, Trash2, Star } from 'lucide-react';
 import { useSidebar } from '@/app/contexts/SidebarContext';
 import { ChatThread, Craft } from '@/app/hooks/useLocalStorage';
 import { SettingsModal } from './SettingsModal';
@@ -54,6 +54,17 @@ export default function Sidebar({
     }
   };
 
+  const handleToggleFavorite = (e: React.MouseEvent | React.KeyboardEvent, chatId: string) => {
+    e.stopPropagation();
+    const newHistory = chatHistory.map(c => {
+        if (c.id === chatId) {
+            return { ...c, isFavorite: !c.isFavorite };
+        }
+        return c;
+    });
+    setChatHistory(newHistory);
+  };
+
   const sidebarVariants = {
     open: { width: "260px", x: 0 },
     collapsed: { width: "80px", x: 0 },
@@ -72,6 +83,7 @@ export default function Sidebar({
     );
 
     const groups: { [key: string]: ChatThread[] } = {
+      'Favorites': [],
       'Today': [],
       'Yesterday': [],
       'Previous 7 Days': [],
@@ -84,6 +96,11 @@ export default function Sidebar({
     const lastWeek = today - 7 * 86400000;
 
     filtered.forEach(chat => {
+      if (chat.isFavorite) {
+        groups['Favorites'].push(chat);
+        return;
+      }
+
       const chatDate = new Date(chat.updatedAt || chat.createdAt).getTime();
 
       if (chatDate >= today) {
@@ -189,24 +206,42 @@ export default function Sidebar({
                                     )}
                                 >
                                     <span className="truncate flex-1 mr-2">{chat.title || 'Untitled Chat'}</span>
-                                    <div
-                                        role="button"
-                                        tabIndex={0}
-                                        onClick={(e) => handleDeleteChat(e, chat.id)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' || e.key === ' ') {
-                                                handleDeleteChat(e, chat.id);
-                                            }
-                                        }}
-                                        className={cn(
-                                            "p-1 hover:bg-red-500/10 hover:text-red-500 rounded transition-all shrink-0",
-                                            // Always visible on mobile (or generally), simpler UX than hover
-                                            "opacity-50 hover:opacity-100 focus:opacity-100"
-                                        )}
-                                        title="Delete chat"
-                                        aria-label="Delete chat"
-                                    >
-                                        <Trash2 size={14} />
+                                    <div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                                      <div
+                                          role="button"
+                                          tabIndex={0}
+                                          onClick={(e) => handleToggleFavorite(e, chat.id)}
+                                          onKeyDown={(e) => {
+                                              if (e.key === 'Enter' || e.key === ' ') {
+                                                  handleToggleFavorite(e, chat.id);
+                                              }
+                                          }}
+                                          className={cn(
+                                              "p-1 hover:bg-yellow-500/10 hover:text-yellow-500 rounded transition-all shrink-0",
+                                              chat.isFavorite ? "text-yellow-500" : "text-muted-foreground/50 hover:text-yellow-500"
+                                          )}
+                                          title={chat.isFavorite ? "Unpin chat" : "Pin chat"}
+                                          aria-label={chat.isFavorite ? "Unpin chat" : "Pin chat"}
+                                      >
+                                          <Star size={14} fill={chat.isFavorite ? "currentColor" : "none"} />
+                                      </div>
+                                      <div
+                                          role="button"
+                                          tabIndex={0}
+                                          onClick={(e) => handleDeleteChat(e, chat.id)}
+                                          onKeyDown={(e) => {
+                                              if (e.key === 'Enter' || e.key === ' ') {
+                                                  handleDeleteChat(e, chat.id);
+                                              }
+                                          }}
+                                          className={cn(
+                                              "p-1 hover:bg-red-500/10 hover:text-red-500 rounded transition-all shrink-0 text-muted-foreground/50 hover:text-red-500"
+                                          )}
+                                          title="Delete chat"
+                                          aria-label="Delete chat"
+                                      >
+                                          <Trash2 size={14} />
+                                      </div>
                                     </div>
                                 </button>
                             ))}
