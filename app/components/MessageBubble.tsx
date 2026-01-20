@@ -2,20 +2,42 @@ import { memo, useState, useMemo, ComponentPropsWithoutRef } from 'react';
 import { motion } from 'framer-motion';
 import { ChatMessage } from '@/app/hooks/useLocalStorage';
 import { cn } from '@/lib/utils';
-import { Bot, User, Copy, Check, RefreshCw } from 'lucide-react';
+import { Bot, User, Copy, Check, RefreshCw, Pencil, X, Save } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CodeBlock } from './CodeBlock';
+import { AutoResizeTextarea } from './AutoResizeTextarea';
 
 interface MessageBubbleProps {
   message: ChatMessage;
   onRegenerate?: () => void;
+  onEdit?: (newContent: string) => void;
 }
 
-export const MessageBubble = memo(function MessageBubble({ message, onRegenerate }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message, onRegenerate, onEdit }: MessageBubbleProps) {
   const [isCopied, setIsCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(message.content);
+
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
+
+  const handleEditStart = () => {
+    setEditContent(message.content);
+    setIsEditing(true);
+  };
+
+  const handleEditCancel = () => {
+    setIsEditing(false);
+    setEditContent(message.content);
+  };
+
+  const handleEditSave = () => {
+    if (editContent.trim() !== message.content && onEdit) {
+      onEdit(editContent.trim());
+    }
+    setIsEditing(false);
+  };
 
   const markdownComponents = useMemo(() => ({
     table({ children }: ComponentPropsWithoutRef<'table'>) {
@@ -91,45 +113,79 @@ export const MessageBubble = memo(function MessageBubble({ message, onRegenerate
 
       <div className={cn(
         "flex flex-col gap-1 min-w-0 max-w-full",
-        isUser ? "items-end" : "items-start"
+        isUser ? "items-end" : "items-start",
+        isEditing ? "w-full" : ""
       )}>
         <div className="font-semibold text-sm text-muted-foreground">
           {isUser ? 'You' : 'Atonin'}
         </div>
-        <div className={cn(
-          "rounded-2xl px-4 py-2 text-sm leading-relaxed break-words max-w-full overflow-hidden",
-          isUser
-            ? "bg-primary text-primary-foreground rounded-tr-sm"
-            : "bg-muted text-foreground rounded-tl-sm w-full"
-        )}>
-          {isUser ? (
-            <div className="whitespace-pre-wrap">{message.content}</div>
-          ) : (
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={markdownComponents}
-            >
-              {message.content}
-            </ReactMarkdown>
-          )}
-        </div>
+
+        {isEditing ? (
+          <div className="w-full bg-muted rounded-xl p-3 border border-border">
+             <AutoResizeTextarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className="w-full bg-transparent text-foreground placeholder-muted-foreground min-h-[60px] resize-none focus:outline-none"
+                autoFocus
+             />
+             <div className="flex justify-end gap-2 mt-2">
+                 <button
+                   onClick={handleEditCancel}
+                   className="px-3 py-1 text-xs font-medium rounded-md hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                 >
+                   Cancel
+                 </button>
+                 <button
+                   onClick={handleEditSave}
+                   disabled={!editContent.trim()}
+                   className="px-3 py-1 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity"
+                 >
+                   Save & Submit
+                 </button>
+             </div>
+          </div>
+        ) : (
+          <div className={cn(
+            "rounded-2xl px-4 py-2 text-sm leading-relaxed break-words max-w-full overflow-hidden",
+            isUser
+              ? "bg-primary text-primary-foreground rounded-tr-sm"
+              : "bg-muted text-foreground rounded-tl-sm w-full"
+          )}>
+            {isUser ? (
+              <div className="whitespace-pre-wrap">{message.content}</div>
+            ) : (
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={markdownComponents}
+              >
+                {message.content}
+              </ReactMarkdown>
+            )}
+          </div>
+        )}
 
         {/* Actions Bar */}
-        <div className={cn(
-             "flex items-center gap-2 mt-1 transition-opacity",
-             // Visible on hover on desktop, always visible on mobile (using a simple heuristic or just always visible for now)
-             "opacity-70 group-hover:opacity-100",
-             isUser ? "justify-end" : "justify-start"
-        )}>
-             <button onClick={handleCopy} className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors" title="Copy message">
-                  {isCopied ? <Check size={14} /> : <Copy size={14} />}
-             </button>
-             {onRegenerate && (
-                 <button onClick={onRegenerate} className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors" title="Regenerate response">
-                      <RefreshCw size={14} />
+        {!isEditing && (
+          <div className={cn(
+               "flex items-center gap-2 mt-1 transition-opacity",
+               "opacity-70 group-hover:opacity-100",
+               isUser ? "justify-end" : "justify-start"
+          )}>
+               <button onClick={handleCopy} className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors" title="Copy message">
+                    {isCopied ? <Check size={14} /> : <Copy size={14} />}
+               </button>
+               {isUser && onEdit && (
+                 <button onClick={handleEditStart} className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors" title="Edit message">
+                    <Pencil size={14} />
                  </button>
-             )}
-        </div>
+               )}
+               {onRegenerate && (
+                   <button onClick={onRegenerate} className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors" title="Regenerate response">
+                        <RefreshCw size={14} />
+                   </button>
+               )}
+          </div>
+        )}
 
       </div>
     </motion.div>
