@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Sidebar from '@/app/components/Sidebar';
 import { MessageBubble } from '@/app/components/MessageBubble';
@@ -8,7 +8,7 @@ import { ModelSelector, MODELS } from '@/app/components/ModelSelector';
 import { useLocalStorage, ChatMessage, ChatThread } from '@/app/hooks/useLocalStorage';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 import { useSidebar } from '@/app/contexts/SidebarContext';
-import { Send, MoreVertical, Loader2 } from 'lucide-react';
+import { Send, MoreVertical, Loader2, Square } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { AutoResizeTextarea } from '@/app/components/AutoResizeTextarea';
 
@@ -20,6 +20,7 @@ export default function Home() {
   const [currentModel, setCurrentModel] = useState(MODELS[0].id);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const { isCollapsed } = useSidebar();
 
@@ -58,6 +59,99 @@ export default function Home() {
     if (isMobile) setIsSidebarOpen(false);
   };
 
+  const stopGeneration = () => {
+    if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+        setIsLoading(false);
+    }
+  };
+
+  const handleStreamResponse = async (
+    threadId: string,
+    messagesToContext: ChatMessage[],
+    initialHistory: ChatThread[]
+  ) => {
+    if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: messagesToContext,
+          modelId: currentModel,
+        }),
+        signal: abortControllerRef.current.signal,
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch response');
+      if (!response.body) throw new Error('No response body');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let aiContent = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value, { stream: true });
+        aiContent += text;
+
+        // Update the thread in history with the partial message
+        // We re-read chatHistory from localStorage hook via setChatHistory's functional update or reference
+        // But since we are inside a function, we must be careful with stale closures.
+        // We can just modify the state we passed in OR use the functional update pattern.
+        // However, 'initialHistory' is just the starting point. We need to update the GLOBAL state.
+
+        setChatHistory((currentHistory) => {
+            const threadIndex = currentHistory.findIndex(t => t.id === threadId);
+            if (threadIndex === -1) return currentHistory;
+
+            const currentMessages = [...currentHistory[threadIndex].messages];
+            const lastMsg = currentMessages[currentMessages.length - 1];
+
+            if (lastMsg && lastMsg.role === 'assistant') {
+                 lastMsg.content = aiContent;
+            } else {
+                 currentMessages.push({ role: 'assistant', content: aiContent });
+            }
+
+            const updatedHistory = [...currentHistory];
+            updatedHistory[threadIndex] = {
+                ...updatedHistory[threadIndex],
+                messages: currentMessages,
+            };
+            return updatedHistory;
+        });
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('Generation stopped by user');
+      } else {
+        console.error(error);
+        setChatHistory((currentHistory) => {
+            const threadIndex = currentHistory.findIndex(t => t.id === threadId);
+            if (threadIndex > -1) {
+                const msgs = [...currentHistory[threadIndex].messages];
+                msgs.push({ role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' });
+                const updatedHistory = [...currentHistory];
+                updatedHistory[threadIndex].messages = msgs;
+                return updatedHistory;
+            }
+            return currentHistory;
+        });
+      }
+    } finally {
+      setIsLoading(false);
+      abortControllerRef.current = null;
+    }
+  };
+
   const handleRegenerate = async () => {
     if (isLoading || !currentChatId) return;
 
@@ -82,58 +176,7 @@ export default function Home() {
     };
     setChatHistory(newHistory);
 
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: newMessages,
-          modelId: currentModel,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch response');
-      if (!response.body) throw new Error('No response body');
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let aiContent = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value, { stream: true });
-        aiContent += text;
-
-        const currentThreadIndex = newHistory.findIndex(t => t.id === currentChatId);
-        const currentMessages = [...newHistory[currentThreadIndex].messages];
-        const lastMsg = currentMessages[currentMessages.length - 1];
-
-        if (lastMsg && lastMsg.role === 'assistant') {
-             lastMsg.content = aiContent;
-        } else {
-             currentMessages.push({ role: 'assistant', content: aiContent });
-        }
-
-        newHistory[currentThreadIndex] = {
-            ...newHistory[currentThreadIndex],
-            messages: currentMessages,
-        };
-        setChatHistory([...newHistory]);
-      }
-    } catch (error) {
-      console.error(error);
-       const currentThreadIndex = newHistory.findIndex(t => t.id === currentChatId);
-      if (currentThreadIndex > -1) {
-          const msgs = [...newHistory[currentThreadIndex].messages];
-          msgs.push({ role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' });
-          newHistory[currentThreadIndex].messages = msgs;
-          setChatHistory(newHistory);
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    await handleStreamResponse(currentChatId, newMessages, newHistory);
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -176,63 +219,34 @@ export default function Home() {
     }
     setChatHistory(newHistory);
 
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: threadMessages,
-          modelId: currentModel,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch response');
-      if (!response.body) throw new Error('No response body');
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let aiContent = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value, { stream: true });
-        aiContent += text;
-
-        // Update the thread in history with the partial message
-        const threadIndex = newHistory.findIndex(t => t.id === threadId);
-        const currentMessages = [...newHistory[threadIndex].messages];
-
-        // If last message is AI, update it, else add it
-        const lastMsg = currentMessages[currentMessages.length - 1];
-        if (lastMsg.role === 'assistant') {
-             lastMsg.content = aiContent;
-        } else {
-             currentMessages.push({ role: 'assistant', content: aiContent });
-        }
-
-        newHistory[threadIndex] = {
-            ...newHistory[threadIndex],
-            messages: currentMessages,
-        };
-        setChatHistory([...newHistory]); // Trigger re-render
-      }
-
-    } catch (error) {
-      console.error(error);
-      // Add error message to chat
-      const threadIndex = newHistory.findIndex(t => t.id === threadId);
-      if (threadIndex > -1) {
-          const msgs = [...newHistory[threadIndex].messages];
-          msgs.push({ role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' });
-          newHistory[threadIndex].messages = msgs;
-          setChatHistory(newHistory);
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    await handleStreamResponse(threadId, threadMessages, newHistory);
   };
+
+  const handleEditMessage = useCallback(async (index: number, newContent: string) => {
+    if (isLoading || !currentChatId) return;
+
+    const threadIndex = chatHistory.findIndex(t => t.id === currentChatId);
+    if (threadIndex === -1) return;
+
+    setIsLoading(true);
+
+    const thread = chatHistory[threadIndex];
+
+    // Slice messages up to the index, replace content
+    const newMessages = thread.messages.slice(0, index + 1);
+    newMessages[index] = { ...newMessages[index], content: newContent };
+
+    const newHistory = [...chatHistory];
+    newHistory[threadIndex] = {
+        ...thread,
+        messages: newMessages,
+        updatedAt: Date.now()
+    };
+    setChatHistory(newHistory);
+
+    await handleStreamResponse(currentChatId, newMessages, newHistory);
+
+  }, [chatHistory, currentChatId, isLoading, setChatHistory, currentModel]);
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
@@ -302,6 +316,7 @@ export default function Home() {
                                 ? handleRegenerate
                                 : undefined
                             }
+                            onEdit={(newContent) => handleEditMessage(idx, newContent)}
                           />
                       ))}
                       {isLoading && messages[messages.length - 1]?.role === 'user' && (
@@ -335,13 +350,23 @@ export default function Home() {
                       disabled={isLoading}
                       className="w-full bg-transparent text-foreground placeholder-muted-foreground py-3 pl-5 pr-12 max-h-[200px]"
                   />
-                  <button
-                      type="submit"
-                      disabled={!input.trim() || isLoading}
-                      className="absolute right-2 bottom-2 p-2 bg-primary text-primary-foreground rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
-                  >
-                      <Send size={18} />
-                  </button>
+                  {isLoading ? (
+                     <button
+                        type="button"
+                        onClick={stopGeneration}
+                        className="absolute right-2 bottom-2 p-2 bg-red-500 text-white rounded-xl hover:opacity-90 transition-opacity"
+                     >
+                        <Square size={18} fill="currentColor" />
+                     </button>
+                  ) : (
+                    <button
+                        type="submit"
+                        disabled={!input.trim()}
+                        className="absolute right-2 bottom-2 p-2 bg-primary text-primary-foreground rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                    >
+                        <Send size={18} />
+                    </button>
+                  )}
               </form>
               <div className="text-center mt-2 text-xs text-muted-foreground">
                   Atonin can make mistakes. Please verify important information.

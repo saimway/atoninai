@@ -12,9 +12,9 @@ This information is used to shape Next.js' roadmap and prioritize features.
 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
 https://nextjs.org/telemetry
 
-✓ Ready in 1445ms
+✓ Ready in 1160ms
 ○ Compiling / ...
- GET / 200 in 11.1s (compile: 9.7s, render: 1436ms)
+ GET / 200 in 10.9s (compile: 9.5s, render: 1449ms)
 ⨯ Error: The GROQ_API_KEY environment variable is missing or empty; either provide it, or instantiate the Groq client with an apiKey option, like new Groq({ apiKey: 'My API Key' }).
     at module evaluation (app/api/chat/route.ts:4:14)
     at Object.<anonymous> (.next/dev/server/app/api/chat/route.js:8:3)
@@ -27,3 +27,72 @@ https://nextjs.org/telemetry
   7 | {
   page: '/api/chat'
 }
+ GET / 200 in 85ms (compile: 5ms, render: 79ms)
+⨯ Error: The GROQ_API_KEY environment variable is missing or empty; either provide it, or instantiate the Groq client with an apiKey option, like new Groq({ apiKey: 'My API Key' }).
+    at module evaluation (app/api/chat/route.ts:4:14)
+    at Object.<anonymous> (.next/dev/server/app/api/chat/route.js:8:3)
+  2 | import { NextRequest, NextResponse } from 'next/server';
+  3 |
+> 4 | const groq = new Groq({
+    |              ^
+  5 |   apiKey: process.env.GROQ_API_KEY,
+  6 | });
+  7 | {
+  page: '/api/chat'
+}
+ POST /api/chat 500 in 94ms (compile: 78ms, render: 16ms)
+ GET / 200 in 84ms (compile: 6ms, render: 78ms)
+⨯ Error: The GROQ_API_KEY environment variable is missing or empty; either provide it, or instantiate the Groq client with an apiKey option, like new Groq({ apiKey: 'My API Key' }).
+    at module evaluation (app/api/chat/route.ts:4:14)
+    at Object.<anonymous> (.next/dev/server/app/api/chat/route.js:8:3)
+  2 | import { NextRequest, NextResponse } from 'next/server';
+  3 |
+> 4 | const groq = new Groq({
+    |              ^
+  5 |   apiKey: process.env.GROQ_API_KEY,
+  6 | });
+  7 | {
+  page: '/api/chat'
+}
+ POST /api/chat 500 in 105ms (compile: 91ms, render: 14ms)
+ GET / 200 in 839ms (compile: 208ms, render: 631ms)
+⨯ Error: The GROQ_API_KEY environment variable is missing or empty; either provide it, or instantiate the Groq client with an apiKey option, like new Groq({ apiKey: 'My API Key' }).
+    at module evaluation (app/api/chat/route.ts:4:14)
+    at Object.<anonymous> (.next/dev/server/app/api/chat/route.js:8:3)
+  2 | import { NextRequest, NextResponse } from 'next/server';
+  3 |
+> 4 | const groq = new Groq({
+    |              ^
+  5 |   apiKey: process.env.GROQ_API_KEY,
+  6 | });
+  7 | {
+  page: '/api/chat'
+}
+ POST /api/chat 500 in 92ms (compile: 79ms, render: 13ms)
+ GET / 200 in 83ms (compile: 7ms, render: 76ms)
+⨯ Error: The GROQ_API_KEY environment variable is missing or empty; either provide it, or instantiate the Groq client with an apiKey option, like new Groq({ apiKey: 'My API Key' }).
+    at module evaluation (app/api/chat/route.ts:4:14)
+    at Object.<anonymous> (.next/dev/server/app/api/chat/route.js:8:3)
+  2 | import { NextRequest, NextResponse } from 'next/server';
+  3 |
+> 4 | const groq = new Groq({
+    |              ^
+  5 |   apiKey: process.env.GROQ_API_KEY,
+  6 | });
+  7 | {
+  page: '/api/chat'
+}
+ POST /api/chat 500 in 114ms (compile: 100ms, render: 15ms)
+⨯ Error: The GROQ_API_KEY environment variable is missing or empty; either provide it, or instantiate the Groq client with an apiKey option, like new Groq({ apiKey: 'My API Key' }).
+    at module evaluation (app/api/chat/route.ts:4:14)
+    at Object.<anonymous> (.next/dev/server/app/api/chat/route.js:8:3)
+  2 | import { NextRequest, NextResponse } from 'next/server';
+  3 |
+> 4 | const groq = new Groq({
+    |              ^
+  5 |   apiKey: process.env.GROQ_API_KEY,
+  6 | });
+  7 | {
+  page: '/api/chat'
+}
+ POST /api/chat 500 in 82ms (compile: 71ms, render: 11ms)
