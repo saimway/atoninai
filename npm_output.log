@@ -12,9 +12,18 @@ This information is used to shape Next.js' roadmap and prioritize features.
 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
 https://nextjs.org/telemetry
 
-✓ Ready in 1098ms
+✓ Ready in 1078ms
 ○ Compiling / ...
- GET / 200 in 10.7s (compile: 9.2s, render: 1419ms)
- GET / 200 in 255ms (compile: 62ms, render: 194ms)
- GET / 200 in 682ms (compile: 79ms, render: 603ms)
- GET / 200 in 81ms (compile: 6ms, render: 75ms)
+ GET / 200 in 10.5s (compile: 9.2s, render: 1358ms)
+⨯ Error: The GROQ_API_KEY environment variable is missing or empty; either provide it, or instantiate the Groq client with an apiKey option, like new Groq({ apiKey: 'My API Key' }).
+    at module evaluation (app/api/chat/route.ts:4:14)
+    at Object.<anonymous> (.next/dev/server/app/api/chat/route.js:8:3)
+  2 | import { NextRequest, NextResponse } from 'next/server';
+  3 |
+> 4 | const groq = new Groq({
+    |              ^
+  5 |   apiKey: process.env.GROQ_API_KEY,
+  6 | });
+  7 | {
+  page: '/api/chat'
+}

@@ -8,8 +8,8 @@ import { ModelSelector, MODELS } from '@/app/components/ModelSelector';
 import { useLocalStorage, ChatMessage, ChatThread } from '@/app/hooks/useLocalStorage';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 import { useSidebar } from '@/app/contexts/SidebarContext';
-import { Send, MoreVertical, Loader2, Square } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Send, MoreVertical, Loader2, Square, Download, Search, X, ArrowDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AutoResizeTextarea } from '@/app/components/AutoResizeTextarea';
 
 export default function Home() {
@@ -19,6 +19,13 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentModel, setCurrentModel] = useState(MODELS[0].id);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // New State for Search and Scroll
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -38,11 +45,43 @@ export default function Home() {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setShowScrollButton(false);
   };
 
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
+
+  const handleScroll = () => {
+    if (messagesContainerRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+        const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+        setShowScrollButton(!isNearBottom);
+    }
+  };
+
+  const handleExportMarkdown = () => {
+    if (!currentThread) return;
+
+    let markdown = `# ${currentThread.title || 'Chat Export'}\n\n`;
+    markdown += `**Model**: ${MODELS.find(m => m.id === currentThread.modelId)?.name || currentThread.modelId}\n`;
+    markdown += `**Date**: ${new Date(currentThread.createdAt).toLocaleString()}\n\n---\n\n`;
+
+    currentThread.messages.forEach(msg => {
+      const role = msg.role === 'user' ? 'User' : 'Atonin';
+      markdown += `**${role}**:\n${msg.content}\n\n`;
+    });
+
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(currentThread.title || 'chat').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const handleNewChat = () => {
     setCurrentChatId(null);
@@ -57,6 +96,8 @@ export default function Home() {
       setCurrentModel(thread.modelId);
     }
     if (isMobile) setIsSidebarOpen(false);
+    setIsSearchOpen(false);
+    setSearchQuery('');
   };
 
   const stopGeneration = () => {
@@ -285,15 +326,76 @@ export default function Home() {
                  <ModelSelector currentModelId={currentModel} onSelectModel={setCurrentModel} disabled={isLoading || messages.length > 0} />
                  {messages.length > 0 && <span className="text-xs text-muted-foreground ml-2">(Model locked for thread)</span>}
               </div>
+              <div className="flex items-center gap-2">
+                 <AnimatePresence>
+                     {isSearchOpen && (
+                         <motion.div
+                           initial={{ width: 0, opacity: 0 }}
+                           animate={{ width: 200, opacity: 1 }}
+                           exit={{ width: 0, opacity: 0 }}
+                           className="overflow-hidden"
+                         >
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search in chat..."
+                                    className="w-full bg-muted border border-transparent focus:border-primary rounded-md py-1.5 pl-3 pr-8 text-sm focus:outline-none transition-colors"
+                                    autoFocus
+                                />
+                                {searchQuery && (
+                                    <button
+                                      onClick={() => setSearchQuery('')}
+                                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                    >
+                                        <X size={12} />
+                                    </button>
+                                )}
+                            </div>
+                         </motion.div>
+                     )}
+                 </AnimatePresence>
+                 <button
+                    onClick={() => {
+                        setIsSearchOpen(!isSearchOpen);
+                        if (isSearchOpen) setSearchQuery('');
+                    }}
+                    className={`p-2 rounded-md transition-colors ${isSearchOpen ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-muted-foreground'}`}
+                    title="Search in Chat"
+                 >
+                     <Search size={18} />
+                 </button>
+                 {messages.length > 0 && (
+                     <button
+                        onClick={handleExportMarkdown}
+                        className="p-2 hover:bg-muted rounded-md text-muted-foreground transition-colors"
+                        title="Export Chat to Markdown"
+                     >
+                         <Download size={18} />
+                     </button>
+                 )}
+              </div>
           </div>
 
            {/* Model Selector Mobile (floating or top) */}
-           <div className="md:hidden p-2 flex justify-center border-b border-border bg-background/50 backdrop-blur-sm sticky top-0 z-10">
+           <div className="md:hidden p-2 flex justify-between items-center border-b border-border bg-background/50 backdrop-blur-sm sticky top-0 z-10">
                <ModelSelector currentModelId={currentModel} onSelectModel={setCurrentModel} disabled={isLoading || messages.length > 0} />
+               <div className="flex items-center gap-1">
+                   {messages.length > 0 && (
+                       <button onClick={handleExportMarkdown} className="p-2 text-muted-foreground">
+                           <Download size={18} />
+                       </button>
+                   )}
+               </div>
            </div>
 
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          <div
+            className="flex-1 overflow-y-auto p-4 space-y-6 scroll-smooth relative"
+            ref={messagesContainerRef}
+            onScroll={handleScroll}
+          >
               {messages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-50">
                       <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-6 flex items-center justify-center shadow-lg shadow-purple-500/20">
@@ -317,6 +419,7 @@ export default function Home() {
                                 : undefined
                             }
                             onEdit={(newContent) => handleEditMessage(idx, newContent)}
+                            highlight={searchQuery}
                           />
                       ))}
                       {isLoading && messages[messages.length - 1]?.role === 'user' && (
@@ -337,10 +440,25 @@ export default function Home() {
                   </>
               )}
               <div ref={messagesEndRef} />
+
+              {/* Scroll to Bottom Button */}
+              <AnimatePresence>
+                  {showScrollButton && (
+                      <motion.button
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          onClick={scrollToBottom}
+                          className="absolute bottom-6 right-6 p-2 bg-primary text-primary-foreground rounded-full shadow-lg z-20 hover:bg-primary/90 transition-colors"
+                      >
+                          <ArrowDown size={20} />
+                      </motion.button>
+                  )}
+              </AnimatePresence>
           </div>
 
           {/* Input Area */}
-          <div className="p-4 bg-background border-t border-border">
+          <div className="p-4 bg-background border-t border-border z-30 relative">
               <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative flex items-end bg-muted rounded-2xl ring-offset-background focus-within:ring-2 focus-within:ring-primary/50 transition-shadow">
                   <AutoResizeTextarea
                       value={input}

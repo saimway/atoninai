@@ -12,9 +12,10 @@ interface MessageBubbleProps {
   message: ChatMessage;
   onRegenerate?: () => void;
   onEdit?: (newContent: string) => void;
+  highlight?: string;
 }
 
-export const MessageBubble = memo(function MessageBubble({ message, onRegenerate, onEdit }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message, onRegenerate, onEdit, highlight }: MessageBubbleProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
@@ -38,6 +39,24 @@ export const MessageBubble = memo(function MessageBubble({ message, onRegenerate
     }
     setIsEditing(false);
   };
+
+  const highlightText = (text: string, query?: string) => {
+    if (!query || !query.trim()) return text;
+    // Escape special characters in query
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parts = text.split(new RegExp(`(${escapedQuery})`, 'gi'));
+    return parts.map((part, i) =>
+      part.toLowerCase() === query.toLowerCase() ? (
+        <mark key={i} className="bg-yellow-500/40 text-inherit rounded-sm px-0.5 font-bold">
+          {part}
+        </mark>
+      ) : (
+        part
+      )
+    );
+  };
+
+  const isMatch = highlight && message.content.toLowerCase().includes(highlight.toLowerCase());
 
   const markdownComponents = useMemo(() => ({
     table({ children }: ComponentPropsWithoutRef<'table'>) {
@@ -146,13 +165,16 @@ export const MessageBubble = memo(function MessageBubble({ message, onRegenerate
           </div>
         ) : (
           <div className={cn(
-            "rounded-2xl px-4 py-2 text-sm leading-relaxed break-words max-w-full overflow-hidden",
+            "rounded-2xl px-4 py-2 text-sm leading-relaxed break-words max-w-full overflow-hidden transition-shadow duration-300",
             isUser
               ? "bg-primary text-primary-foreground rounded-tr-sm"
-              : "bg-muted text-foreground rounded-tl-sm w-full"
+              : "bg-muted text-foreground rounded-tl-sm w-full",
+            !isUser && isMatch && "ring-2 ring-yellow-500/50 shadow-lg shadow-yellow-500/10"
           )}>
             {isUser ? (
-              <div className="whitespace-pre-wrap">{message.content}</div>
+              <div className="whitespace-pre-wrap">
+                 {highlight ? highlightText(message.content, highlight) : message.content}
+              </div>
             ) : (
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
