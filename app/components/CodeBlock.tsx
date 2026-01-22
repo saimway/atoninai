@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Check, Copy, Eye, Code } from 'lucide-react';
+import { Check, Copy, Eye, Code, PanelRightOpen } from 'lucide-react';
+import { useArtifact } from '@/app/contexts/ArtifactContext';
 
 interface CodeBlockProps {
   language: string;
@@ -13,6 +14,7 @@ interface CodeBlockProps {
 export function CodeBlock({ language, value }: CodeBlockProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [view, setView] = useState<'code' | 'preview'>('code');
+  const { openArtifact } = useArtifact();
 
   const isPreviewable = ['html', 'svg'].includes(language?.toLowerCase());
 
@@ -25,6 +27,15 @@ export function CodeBlock({ language, value }: CodeBlockProps) {
     } catch (err) {
       console.error('Failed to copy text: ', err);
     }
+  };
+
+  const handleOpenArtifact = () => {
+    openArtifact({
+        id: crypto.randomUUID(),
+        title: (language || 'Code').toUpperCase() + ' Snippet',
+        content: value,
+        language: language || 'text'
+    });
   };
 
   return (
@@ -51,22 +62,34 @@ export function CodeBlock({ language, value }: CodeBlockProps) {
             </div>
           )}
         </div>
-        <button
-          onClick={copyToClipboard}
-          className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
-        >
-          {isCopied ? (
-            <>
-              <Check size={14} className="text-green-500" />
-              <span>Copied!</span>
-            </>
-          ) : (
-            <>
-              <Copy size={14} />
-              <span>Copy code</span>
-            </>
-          )}
-        </button>
+
+        <div className="flex items-center gap-3">
+            <button
+                onClick={handleOpenArtifact}
+                className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
+                title="Open in Side Panel"
+            >
+                <PanelRightOpen size={14} />
+                <span className="hidden sm:inline">Open</span>
+            </button>
+            <div className="w-px h-4 bg-zinc-800" />
+            <button
+              onClick={copyToClipboard}
+              className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
+            >
+              {isCopied ? (
+                <>
+                  <Check size={14} className="text-green-500" />
+                  <span>Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={14} />
+                  <span>Copy</span>
+                </>
+              )}
+            </button>
+        </div>
       </div>
 
       {view === 'preview' && isPreviewable ? (

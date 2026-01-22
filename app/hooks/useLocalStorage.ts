@@ -45,9 +45,12 @@ export function useLocalStorage() {
     loadData();
   }, []);
 
-  const saveChatHistory = (history: ChatThread[]) => {
-    setChatHistory(history);
-    localStorage.setItem('atonin_chat_history', JSON.stringify(history));
+  const saveChatHistory = (action: React.SetStateAction<ChatThread[]>) => {
+    setChatHistory(prev => {
+        const next = typeof action === 'function' ? (action as Function)(prev) : action;
+        localStorage.setItem('atonin_chat_history', JSON.stringify(next));
+        return next;
+    });
   };
 
   const saveCrafts = (newCrafts: Craft[]) => {
