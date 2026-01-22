@@ -13,6 +13,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AutoResizeTextarea } from '@/app/components/AutoResizeTextarea';
 import { useSpeechRecognition } from '@/app/hooks/useSpeechRecognition';
 import { SuggestionCards } from '@/app/components/SuggestionCards';
+import { ArtifactPanel } from '@/app/components/ArtifactPanel';
+import { useArtifact } from '@/app/contexts/ArtifactContext';
 
 export default function Home() {
   const { chatHistory, setChatHistory, crafts, setCrafts } = useLocalStorage();
@@ -52,6 +54,7 @@ export default function Home() {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const { isCollapsed } = useSidebar();
+  const { isOpen: isArtifactOpen } = useArtifact();
 
   const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -329,7 +332,10 @@ export default function Home() {
       {/* Main Content Area */}
       <div
         className="flex-1 flex flex-col h-full relative transition-all duration-300 md:pl-0"
-        style={{ marginLeft: isMobile ? 0 : (isCollapsed ? '80px' : '260px') }}
+        style={{
+           marginLeft: isMobile ? 0 : (isCollapsed ? '80px' : '260px'),
+           marginRight: isMobile ? 0 : (isArtifactOpen ? '450px' : '0')
+        }}
       >
 
           {/* Mobile Header */}
@@ -528,6 +534,7 @@ export default function Home() {
               </div>
           </div>
       </div>
+      <ArtifactPanel />
     </div>
   );
 }
