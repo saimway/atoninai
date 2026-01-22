@@ -8,9 +8,11 @@ import { ModelSelector, MODELS } from '@/app/components/ModelSelector';
 import { useLocalStorage, ChatMessage, ChatThread } from '@/app/hooks/useLocalStorage';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 import { useSidebar } from '@/app/contexts/SidebarContext';
-import { Send, MoreVertical, Loader2, Square, Download, Search, X, ArrowDown } from 'lucide-react';
+import { Send, MoreVertical, Loader2, Square, Download, Search, X, ArrowDown, Mic, MicOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AutoResizeTextarea } from '@/app/components/AutoResizeTextarea';
+import { useSpeechRecognition } from '@/app/hooks/useSpeechRecognition';
+import { SuggestionCards } from '@/app/components/SuggestionCards';
 
 export default function Home() {
   const { chatHistory, setChatHistory, crafts, setCrafts } = useLocalStorage();
@@ -18,6 +20,26 @@ export default function Home() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentModel, setCurrentModel] = useState(MODELS[0].id);
+
+  // Speech Recognition
+  const { isListening, transcript, startListening, stopListening, hasSupport, resetTranscript } = useSpeechRecognition();
+  const [baseInput, setBaseInput] = useState('');
+
+  useEffect(() => {
+    if (isListening) {
+        setInput(baseInput + (baseInput ? ' ' : '') + transcript);
+    }
+  }, [transcript, isListening, baseInput]);
+
+  const handleMicClick = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      setBaseInput(input);
+      resetTranscript();
+      startListening();
+    }
+  };
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // New State for Search and Scroll
@@ -170,8 +192,8 @@ export default function Home() {
             return updatedHistory;
         });
       }
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
         console.log('Generation stopped by user');
       } else {
         console.error(error);
@@ -406,6 +428,7 @@ export default function Home() {
                           Start a conversation or create a Craft to get started.
                           I can help you with writing, coding, analysis and more.
                       </p>
+                      <SuggestionCards onSelect={(text) => setInput(text)} />
                   </div>
               ) : (
                   <>
@@ -460,13 +483,27 @@ export default function Home() {
           {/* Input Area */}
           <div className="p-4 bg-background border-t border-border z-30 relative">
               <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative flex items-end bg-muted rounded-2xl ring-offset-background focus-within:ring-2 focus-within:ring-primary/50 transition-shadow">
+                  {hasSupport && (
+                      <button
+                          type="button"
+                          onClick={handleMicClick}
+                          className={`p-3 rounded-xl transition-colors mb-1 ml-1 ${
+                              isListening
+                              ? 'text-red-500 bg-red-500/10 animate-pulse'
+                              : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+                          }`}
+                          title={isListening ? 'Stop listening' : 'Start voice input'}
+                      >
+                          {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+                      </button>
+                  )}
                   <AutoResizeTextarea
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onEnter={() => handleSubmit()}
-                      placeholder="Message Atonin..."
-                      disabled={isLoading}
-                      className="w-full bg-transparent text-foreground placeholder-muted-foreground py-3 pl-5 pr-12 max-h-[200px]"
+                      placeholder={isListening ? "Listening..." : "Message Atonin..."}
+                      disabled={isLoading || isListening}
+                      className="w-full bg-transparent text-foreground placeholder-muted-foreground py-3 pl-2 pr-12 max-h-[200px]"
                   />
                   {isLoading ? (
                      <button
