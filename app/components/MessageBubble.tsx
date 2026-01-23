@@ -1,10 +1,12 @@
 import { memo, useState, useMemo, ComponentPropsWithoutRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ChatMessage } from '@/app/hooks/useLocalStorage';
 import { cn } from '@/lib/utils';
-import { Bot, User, Copy, Check, RefreshCw, Pencil, X, Save } from 'lucide-react';
+import { Bot, User, Copy, Check, RefreshCw, Pencil, Save, ChevronDown, ChevronRight, BrainCircuit } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { CodeBlock } from './CodeBlock';
 import { AutoResizeTextarea } from './AutoResizeTextarea';
 
@@ -15,13 +17,29 @@ interface MessageBubbleProps {
   highlight?: string;
 }
 
+const extractThinking = (content: string) => {
+  const thinkMatch = content.match(/<think>([\s\S]*?)(?:<\/think>|$)/);
+  if (thinkMatch) {
+    const thinking = thinkMatch[1].trim();
+    const cleanContent = content.replace(/<think>[\s\S]*?(?:<\/think>|$)/, '').trim();
+    return { thinking, cleanContent };
+  }
+  return { thinking: null, cleanContent: content };
+};
+
 export const MessageBubble = memo(function MessageBubble({ message, onRegenerate, onEdit, highlight }: MessageBubbleProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
+  const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
 
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
+
+  const { thinking, cleanContent } = useMemo(() => {
+    if (isUser) return { thinking: null, cleanContent: message.content };
+    return extractThinking(message.content);
+  }, [message.content, isUser]);
 
   const handleEditStart = () => {
     setEditContent(message.content);
@@ -176,12 +194,41 @@ export const MessageBubble = memo(function MessageBubble({ message, onRegenerate
                  {highlight ? highlightText(message.content, highlight) : message.content}
               </div>
             ) : (
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={markdownComponents}
-              >
-                {message.content}
-              </ReactMarkdown>
+              <div className="flex flex-col gap-2">
+                {thinking && (
+                   <div className="border-b border-border/50 pb-2 mb-2">
+                      <button
+                        onClick={() => setIsThinkingExpanded(!isThinkingExpanded)}
+                        className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors w-full"
+                      >
+                         <BrainCircuit size={14} />
+                         <span>Thinking Process</span>
+                         {isThinkingExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                      </button>
+                      <AnimatePresence>
+                         {isThinkingExpanded && (
+                           <motion.div
+                             initial={{ height: 0, opacity: 0 }}
+                             animate={{ height: 'auto', opacity: 1 }}
+                             exit={{ height: 0, opacity: 0 }}
+                             className="overflow-hidden"
+                           >
+                              <div className="pt-2 text-xs text-muted-foreground italic leading-relaxed whitespace-pre-wrap border-l-2 border-primary/20 pl-3 ml-1 mt-1">
+                                {thinking}
+                              </div>
+                           </motion.div>
+                         )}
+                      </AnimatePresence>
+                   </div>
+                )}
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
+                  components={markdownComponents}
+                >
+                  {cleanContent || (thinking ? '' : '...')}
+                </ReactMarkdown>
+              </div>
             )}
           </div>
         )}
