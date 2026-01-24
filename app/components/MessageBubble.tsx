@@ -1,8 +1,8 @@
-import { memo, useState, useMemo, ComponentPropsWithoutRef } from 'react';
+import { memo, useState, useMemo, useEffect, ComponentPropsWithoutRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChatMessage } from '@/app/hooks/useLocalStorage';
 import { cn } from '@/lib/utils';
-import { Bot, User, Copy, Check, RefreshCw, Pencil, Save, ChevronDown, ChevronRight, BrainCircuit } from 'lucide-react';
+import { Bot, User, Copy, Check, RefreshCw, Pencil, Save, ChevronDown, ChevronRight, BrainCircuit, Volume2, Square } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -32,6 +32,7 @@ export const MessageBubble = memo(function MessageBubble({ message, onRegenerate
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
@@ -40,6 +41,12 @@ export const MessageBubble = memo(function MessageBubble({ message, onRegenerate
     if (isUser) return { thinking: null, cleanContent: message.content };
     return extractThinking(message.content);
   }, [message.content, isUser]);
+
+  useEffect(() => {
+    return () => {
+        window.speechSynthesis.cancel();
+    };
+  }, []);
 
   const handleEditStart = () => {
     setEditContent(message.content);
@@ -124,12 +131,34 @@ export const MessageBubble = memo(function MessageBubble({ message, onRegenerate
   const handleCopy = async () => {
     if (!navigator.clipboard) return;
     try {
-      await navigator.clipboard.writeText(message.content);
+      await navigator.clipboard.writeText(cleanContent);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy', err);
     }
+  };
+
+  const handleSpeak = () => {
+    if (isSpeaking) {
+        window.speechSynthesis.cancel();
+        setIsSpeaking(false);
+        return;
+    }
+
+    // Cancel any current speech
+    window.speechSynthesis.cancel();
+
+    const textToSpeak = cleanContent
+        .replace(/[#*`_\[\]()]/g, '') // Basic markdown stripping
+        .replace(/<[^>]*>/g, ''); // HTML tags
+
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
+    setIsSpeaking(true);
   };
 
   return (
@@ -243,6 +272,11 @@ export const MessageBubble = memo(function MessageBubble({ message, onRegenerate
                <button onClick={handleCopy} className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors" title="Copy message">
                     {isCopied ? <Check size={14} /> : <Copy size={14} />}
                </button>
+               {!isUser && (
+                   <button onClick={handleSpeak} className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors" title={isSpeaking ? "Stop speaking" : "Read aloud"}>
+                        {isSpeaking ? <Square size={14} fill="currentColor" /> : <Volume2 size={14} />}
+                   </button>
+               )}
                {isUser && onEdit && (
                  <button onClick={handleEditStart} className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors" title="Edit message">
                     <Pencil size={14} />

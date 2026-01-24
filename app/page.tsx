@@ -125,13 +125,34 @@ export default function Home() {
     setSearchQuery('');
   };
 
-  const stopGeneration = () => {
+  const stopGeneration = useCallback(() => {
     if (abortControllerRef.current) {
         abortControllerRef.current.abort();
         abortControllerRef.current = null;
         setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+            e.preventDefault();
+            setIsSearchOpen(prev => !prev);
+            if (!isSearchOpen) setSearchQuery('');
+        }
+        if (e.key === 'Escape') {
+            if (isLoading) {
+                stopGeneration();
+            } else if (isSearchOpen) {
+                setIsSearchOpen(false);
+                setSearchQuery('');
+            }
+        }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSearchOpen, isLoading, stopGeneration]);
 
   const handleStreamResponse = async (
     threadId: string,
@@ -529,8 +550,13 @@ export default function Home() {
                     </button>
                   )}
               </form>
-              <div className="text-center mt-2 text-xs text-muted-foreground">
-                  Atonin can make mistakes. Please verify important information.
+              <div className="flex justify-between items-center mt-2 px-1">
+                  <div className="text-xs text-muted-foreground">
+                      Atonin can make mistakes. Please verify important information.
+                  </div>
+                  <div className="text-xs text-muted-foreground font-mono">
+                      {input.length} chars (~{Math.round(input.length / 4)} tokens)
+                  </div>
               </div>
           </div>
       </div>

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { SidebarItem } from './SidebarItem';
-import { MessageSquare, Hammer, Settings, Menu, X, Plus, Search, Trash2, Star } from 'lucide-react';
+import { MessageSquare, Hammer, Settings, Menu, X, Plus, Search, Trash2, Star, Keyboard } from 'lucide-react';
 import { useSidebar } from '@/app/contexts/SidebarContext';
 import { ChatThread, Craft } from '@/app/hooks/useLocalStorage';
 import { SettingsModal } from './SettingsModal';
+import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -36,7 +37,24 @@ export default function Sidebar({
 }: SidebarProps) {
   const { isCollapsed, toggleSidebar } = useSidebar();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+            e.preventDefault();
+            setIsShortcutsOpen(prev => !prev);
+        }
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+            e.preventDefault();
+            toggleSidebar();
+        }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleSidebar]);
 
   const handleToggle = () => {
     if (isMobile) {
@@ -126,6 +144,11 @@ export default function Sidebar({
         setChatHistory={setChatHistory}
         crafts={crafts}
         setCrafts={setCrafts}
+      />
+
+      <KeyboardShortcutsModal
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
       />
 
       {/* Mobile Overlay */}
@@ -252,7 +275,15 @@ export default function Sidebar({
           </div>
         </div>
 
-        <div className="p-4 border-t border-border mt-auto">
+        <div className="p-4 border-t border-border mt-auto space-y-1">
+          <button
+            onClick={() => setIsShortcutsOpen(true)}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors ${isCollapsed ? 'justify-center' : ''}`}
+            title="Keyboard Shortcuts"
+          >
+             <Keyboard size={20} />
+             {!isCollapsed && <span className="text-sm">Shortcuts</span>}
+          </button>
           <button
             onClick={() => setIsSettingsOpen(true)}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors ${isCollapsed ? 'justify-center' : ''}`}
