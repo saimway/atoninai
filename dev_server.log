@@ -7,7 +7,68 @@
 - Network:       http://192.168.0.2:3000
 
 ✓ Starting...
-✓ Ready in 1123ms
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+✓ Ready in 1155ms
 ○ Compiling / ...
- GET / 200 in 10.3s (compile: 8.9s, render: 1424ms)
- GET / 200 in 668ms (compile: 230ms, render: 438ms)
+ GET / 200 in 10.8s (compile: 9.2s, render: 1545ms)
+Error in chat API: Error: 401 {"error":{"message":"Invalid API Key","type":"invalid_request_error","code":"invalid_api_key"}}
+    at async POST (app/api/chat/route.ts:30:24)
+  28 |     }
+  29 |
+> 30 |     const completion = await groq.chat.completions.create({
+     |                        ^
+  31 |       messages: currentMessages,
+  32 |       model: modelId,
+  33 |       stream: true, {
+  status: 401,
+  headers: [Object],
+  error: [Object]
+}
+ POST /api/chat 500 in 3.2s (compile: 2.7s, render: 512ms)
+Error in chat API: Error: 401 {"error":{"message":"Invalid API Key","type":"invalid_request_error","code":"invalid_api_key"}}
+    at async POST (app/api/chat/route.ts:30:24)
+  28 |     }
+  29 |
+> 30 |     const completion = await groq.chat.completions.create({
+     |                        ^
+  31 |       messages: currentMessages,
+  32 |       model: modelId,
+  33 |       stream: true, {
+  status: 401,
+  headers: [Object],
+  error: [Object]
+}
+ POST /api/chat 500 in 203ms (compile: 20ms, render: 183ms)
+ GET / 200 in 114ms (compile: 7ms, render: 107ms)
+Error in chat API: Error: 401 {"error":{"message":"Invalid API Key","type":"invalid_request_error","code":"invalid_api_key"}}
+    at async POST (app/api/chat/route.ts:30:24)
+  28 |     }
+  29 |
+> 30 |     const completion = await groq.chat.completions.create({
+     |                        ^
+  31 |       messages: currentMessages,
+  32 |       model: modelId,
+  33 |       stream: true, {
+  status: 401,
+  headers: [Object],
+  error: [Object]
+}
+ POST /api/chat 500 in 280ms (compile: 19ms, render: 261ms)
+Error in chat API: Error: 401 {"error":{"message":"Invalid API Key","type":"invalid_request_error","code":"invalid_api_key"}}
+    at async POST (app/api/chat/route.ts:30:24)
+  28 |     }
+  29 |
+> 30 |     const completion = await groq.chat.completions.create({
+     |                        ^
+  31 |       messages: currentMessages,
+  32 |       model: modelId,
+  33 |       stream: true, {
+  status: 401,
+  headers: [Object],
+  error: [Object]
+}
+ POST /api/chat 500 in 216ms (compile: 11ms, render: 205ms)
