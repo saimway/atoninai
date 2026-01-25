@@ -96,11 +96,30 @@ export default function Sidebar({
 
   // Filter and Group Chats
   const groupedChats = useMemo(() => {
-    const filtered = chatHistory.filter(chat =>
-      chat.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const query = searchQuery.toLowerCase();
 
-    const groups: { [key: string]: ChatThread[] } = {
+    // Filter and map to include snippets
+    const filtered = chatHistory.map(chat => {
+        const titleMatch = chat.title.toLowerCase().includes(query);
+        let matchSnippet: string | undefined;
+
+        if (!titleMatch && query) {
+            const matchingMsg = chat.messages.find(msg => msg.content.toLowerCase().includes(query));
+            if (matchingMsg) {
+                const index = matchingMsg.content.toLowerCase().indexOf(query);
+                const start = Math.max(0, index - 20);
+                const end = Math.min(matchingMsg.content.length, index + query.length + 20);
+                matchSnippet = (start > 0 ? '...' : '') + matchingMsg.content.slice(start, end) + (end < matchingMsg.content.length ? '...' : '');
+            }
+        }
+
+        if (titleMatch || matchSnippet) {
+            return { ...chat, matchSnippet };
+        }
+        return null;
+    }).filter(Boolean) as (ChatThread & { matchSnippet?: string })[];
+
+    const groups: { [key: string]: (ChatThread & { matchSnippet?: string })[] } = {
       'Favorites': [],
       'Today': [],
       'Yesterday': [],
@@ -222,13 +241,20 @@ export default function Sidebar({
                                     key={chat.id}
                                     onClick={() => onSelectChat(chat.id)}
                                     className={cn(
-                                        "group flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-sm truncate transition-colors",
+                                        "group flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-sm transition-colors",
                                         currentChatId === chat.id
                                             ? "bg-muted text-foreground font-medium"
                                             : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                                     )}
                                 >
-                                    <span className="truncate flex-1 mr-2">{chat.title || 'Untitled Chat'}</span>
+                                    <div className="flex flex-col flex-1 min-w-0 mr-2">
+                                        <span className="truncate">{chat.title || 'Untitled Chat'}</span>
+                                        {chat.matchSnippet && (
+                                            <span className="text-xs text-muted-foreground/70 truncate">
+                                                {chat.matchSnippet}
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                                       <div
                                           role="button"

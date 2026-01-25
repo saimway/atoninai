@@ -16,6 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Atonin AI",
   description: "Advanced AI Assistant with Crafts",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
