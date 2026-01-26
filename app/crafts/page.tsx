@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Sidebar from '@/app/components/Sidebar';
 import { useLocalStorage, Craft, ChatThread, ChatMessage } from '@/app/hooks/useLocalStorage';
+import { useSettings } from '@/app/contexts/SettingsContext';
 import { Plus, Trash2, ArrowLeft, Bot, Send, Loader2, MoreVertical, Pencil, Copy, Eraser } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageBubble } from '@/app/components/MessageBubble';
@@ -32,6 +33,7 @@ function BotIcon() {
 
 export default function CraftsPage() {
   const { crafts, setCrafts, chatHistory, setChatHistory } = useLocalStorage();
+  const { apiKey, customInstructions } = useSettings();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCraftId, setEditingCraftId] = useState<string | null>(null);
   const [newCraftName, setNewCraftName] = useState('');
@@ -163,8 +165,12 @@ export default function CraftsPage() {
     setChatHistory(updatedHistory);
 
     try {
+        const fullSystemInstruction = customInstructions
+            ? `${customInstructions}\n\n${selectedCraft.systemInstruction}`
+            : selectedCraft.systemInstruction;
+
         const messagesToSend = [
-            { role: 'system', content: selectedCraft.systemInstruction },
+            { role: 'system', content: fullSystemInstruction },
             ...(currentThread ? currentThread.messages : []),
             userMessage
         ];
@@ -175,6 +181,7 @@ export default function CraftsPage() {
             body: JSON.stringify({
                 messages: messagesToSend,
                 modelId: 'llama-3.3-70b-versatile',
+                apiKey,
             }),
         });
 

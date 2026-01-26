@@ -1,13 +1,13 @@
 import { Groq } from 'groq-sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
-
 export async function POST(req: NextRequest) {
   try {
-    const { messages, modelId, systemInstruction } = await req.json();
+    const { messages, modelId, systemInstruction, apiKey } = await req.json();
+
+    const groq = new Groq({
+      apiKey: apiKey || process.env.GROQ_API_KEY,
+    });
 
     if (!modelId) {
       return NextResponse.json({ error: 'Model ID is required' }, { status: 400 });

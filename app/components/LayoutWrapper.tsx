@@ -6,15 +6,17 @@ import { ReactNode } from "react";
 import { ThemeProvider } from "../contexts/ThemeContext";
 import { SidebarProvider } from "../contexts/SidebarContext";
 import { ArtifactProvider } from "../contexts/ArtifactContext";
+import { SettingsProvider } from "../contexts/SettingsContext";
 
 export default function LayoutWrapper({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   return (
     <ThemeProvider>
-      <SidebarProvider>
-        <ArtifactProvider>
-          {/* Global Page Transition */}
+      <SettingsProvider>
+        <SidebarProvider>
+          <ArtifactProvider>
+            {/* Global Page Transition */}
           <AnimatePresence mode="wait">
             <motion.div
               key={pathname}
@@ -25,10 +27,11 @@ export default function LayoutWrapper({ children }: { children: ReactNode }) {
               className="h-full"
             >
               {children}
-            </motion.div>
-          </AnimatePresence>
-        </ArtifactProvider>
-      </SidebarProvider>
+              </motion.div>
+            </AnimatePresence>
+          </ArtifactProvider>
+        </SidebarProvider>
+      </SettingsProvider>
     </ThemeProvider>
   );
 }

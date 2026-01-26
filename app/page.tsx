@@ -8,6 +8,7 @@ import { ModelSelector, MODELS } from '@/app/components/ModelSelector';
 import { useLocalStorage, ChatMessage, ChatThread } from '@/app/hooks/useLocalStorage';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 import { useSidebar } from '@/app/contexts/SidebarContext';
+import { useSettings } from '@/app/contexts/SettingsContext';
 import { Send, MoreVertical, Loader2, Square, Download, Search, X, ArrowDown, Mic, MicOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AutoResizeTextarea } from '@/app/components/AutoResizeTextarea';
@@ -18,6 +19,7 @@ import { useArtifact } from '@/app/contexts/ArtifactContext';
 
 export default function Home() {
   const { chatHistory, setChatHistory, crafts, setCrafts } = useLocalStorage();
+  const { apiKey, customInstructions } = useSettings();
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -171,6 +173,8 @@ export default function Home() {
         body: JSON.stringify({
           messages: messagesToContext,
           modelId: currentModel,
+          apiKey,
+          systemInstruction: customInstructions,
         }),
         signal: abortControllerRef.current.signal,
       });

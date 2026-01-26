@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Moon, Sun, Trash2, Download, Upload, AlertTriangle } from 'lucide-react';
+import { X, Moon, Sun, Trash2, Download, Upload, AlertTriangle, Key, MessageSquareText, Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '@/app/contexts/ThemeContext';
+import { useSettings } from '@/app/contexts/SettingsContext';
 import { ChatThread, Craft } from '@/app/hooks/useLocalStorage';
 
 interface SettingsModalProps {
@@ -24,8 +25,24 @@ export function SettingsModal({
   setCrafts
 }: SettingsModalProps) {
   const { theme, setTheme } = useTheme();
+  const { apiKey, setApiKey, customInstructions, setCustomInstructions } = useSettings();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
+
+  // Local state for inputs to avoid excessive context updates/localStorage writes
+  const [localApiKey, setLocalApiKey] = useState(apiKey);
+  const [localInstructions, setLocalInstructions] = useState(customInstructions);
+
+  useEffect(() => {
+    setLocalApiKey(apiKey);
+    setLocalInstructions(customInstructions);
+  }, [apiKey, customInstructions]);
+
+  const handleSaveSettings = () => {
+    if (localApiKey !== apiKey) setApiKey(localApiKey);
+    if (localInstructions !== customInstructions) setCustomInstructions(localInstructions);
+  };
 
   const handleExport = () => {
     const data = {
@@ -91,17 +108,68 @@ export function SettingsModal({
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="bg-card border border-border rounded-xl shadow-xl w-full max-w-md overflow-hidden"
+        className="bg-card border border-border rounded-xl shadow-xl w-full max-w-md overflow-hidden max-h-[90vh] flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
             <h2 className="text-lg font-semibold">Settings</h2>
-            <button onClick={onClose} className="p-1 hover:bg-muted rounded-md text-muted-foreground">
+          <button onClick={() => { handleSaveSettings(); onClose(); }} className="p-1 hover:bg-muted rounded-md text-muted-foreground">
               <X size={20} />
             </button>
           </div>
 
-          <div className="p-4 space-y-6">
+        <div className="p-4 space-y-6 overflow-y-auto flex-1">
+          {/* General Settings */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">General</h3>
+
+            {/* Custom Instructions */}
+            <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                    <MessageSquareText size={16} />
+                    <span>Custom Instructions (System Prompt)</span>
+                </div>
+                <textarea
+                    value={localInstructions}
+                    onChange={(e) => setLocalInstructions(e.target.value)}
+                    onBlur={handleSaveSettings}
+                    placeholder="e.g. You are a helpful coding assistant. Always answer in Markdown."
+                    className="w-full bg-muted/50 border border-transparent focus:border-primary rounded-lg p-3 text-sm min-h-[100px] resize-none focus:outline-none transition-colors"
+                />
+                <p className="text-xs text-muted-foreground">
+                    These instructions will be added to all your chats.
+                </p>
+            </div>
+
+            {/* API Key */}
+            <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                    <Key size={16} />
+                    <span>Groq API Key (Optional)</span>
+                </div>
+                <div className="relative">
+                    <input
+                        type={showApiKey ? "text" : "password"}
+                        value={localApiKey}
+                        onChange={(e) => setLocalApiKey(e.target.value)}
+                        onBlur={handleSaveSettings}
+                        placeholder="gsk_..."
+                        className="w-full bg-muted/50 border border-transparent focus:border-primary rounded-lg py-2 pl-3 pr-10 text-sm focus:outline-none transition-colors"
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                        {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                    Leave blank to use the default key. Your key is stored locally.
+                </p>
+            </div>
+          </div>
+
             {/* Appearance */}
             <div className="space-y-3">
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Appearance</h3>
@@ -187,7 +255,7 @@ export function SettingsModal({
 
             <div className="text-center pt-2">
                 <p className="text-xs text-muted-foreground">
-                    Atonin AI v1.0.0
+                    Atonin AI v1.1.0
                 </p>
             </div>
           </div>
