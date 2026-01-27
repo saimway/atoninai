@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import Sidebar from '@/app/components/Sidebar';
 import { useLocalStorage, Craft, ChatThread, ChatMessage } from '@/app/hooks/useLocalStorage';
 import { useSettings } from '@/app/contexts/SettingsContext';
-import { Plus, Trash2, ArrowLeft, Bot, Send, Loader2, MoreVertical, Pencil, Copy, Eraser } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Bot, Send, Loader2, MoreVertical, Pencil, Copy, Eraser, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageBubble } from '@/app/components/MessageBubble';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
@@ -30,6 +30,33 @@ function BotIcon() {
       </svg>
     )
 }
+
+const CRAFT_TEMPLATES = [
+  {
+    name: "Code Expert",
+    instruction: "You are an expert software engineer specialized in writing clean, efficient, and modern code. Always explain your reasoning, handle edge cases, and follow best practices. When providing code, include comments and type definitions."
+  },
+  {
+    name: "Creative Writer",
+    instruction: "You are a creative writer with a flair for vivid imagery and engaging storytelling. Adapt your tone to the genre requested (e.g., sci-fi, fantasy, mystery). Focus on showing rather than telling."
+  },
+  {
+    name: "Summarizer",
+    instruction: "You are an expert summarizer. Your goal is to extract the most important information from the text provided and present it continuously and concisely. Use bullet points for key takeaways."
+  },
+  {
+    name: "Math Tutor",
+    instruction: "You are a patient and knowledgeable math tutor. Explain complex concepts step-by-step using simple language. Encourage the user to solve parts of the problem themselves."
+  },
+  {
+    name: "Debate Coach",
+    instruction: "You are a debate coach. Analyze arguments for logical fallacies, suggest counter-arguments, and help the user strengthen their position. Remain neutral and objective."
+  },
+  {
+    name: "Translator",
+    instruction: "You are a professional translator. Translate the text accurately while preserving the original tone, nuance, and cultural context. If there are ambiguities, explain them."
+  }
+];
 
 export default function CraftsPage() {
   const { crafts, setCrafts, chatHistory, setChatHistory } = useLocalStorage();
@@ -115,6 +142,11 @@ export default function CraftsPage() {
       setNewCraftInstruction('');
       setEditingCraftId(null);
       setIsModalOpen(true);
+  };
+
+  const fillTemplate = (template: { name: string, instruction: string }) => {
+      setNewCraftName(template.name);
+      setNewCraftInstruction(template.instruction);
   };
 
   const openEditModal = (craft: Craft, e: React.MouseEvent) => {
@@ -418,6 +450,26 @@ export default function CraftsPage() {
                     >
                         <div className="p-6">
                             <h2 className="text-xl font-bold mb-4">{editingCraftId ? 'Edit Craft' : 'Create New Craft'}</h2>
+
+                            {!editingCraftId && (
+                                <div className="mb-6">
+                                    <label className="text-xs font-medium text-muted-foreground mb-2 block uppercase tracking-wider">Start with a Template</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {CRAFT_TEMPLATES.map((t) => (
+                                            <button
+                                                key={t.name}
+                                                type="button"
+                                                onClick={() => fillTemplate(t)}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-medium"
+                                            >
+                                                <Sparkles size={12} />
+                                                {t.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             <form onSubmit={handleSaveCraft}>
                                 <div className="space-y-4">
                                     <div>

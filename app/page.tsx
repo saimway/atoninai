@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback, ComponentPropsWithoutRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Sidebar from '@/app/components/Sidebar';
 import { MessageBubble } from '@/app/components/MessageBubble';
@@ -9,13 +9,19 @@ import { useLocalStorage, ChatMessage, ChatThread } from '@/app/hooks/useLocalSt
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 import { useSidebar } from '@/app/contexts/SidebarContext';
 import { useSettings } from '@/app/contexts/SettingsContext';
-import { Send, MoreVertical, Loader2, Square, Download, Search, X, ArrowDown, Mic, MicOff } from 'lucide-react';
+import { Send, MoreVertical, Loader2, Square, Download, Search, X, ArrowDown, Mic, MicOff, Eye, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AutoResizeTextarea } from '@/app/components/AutoResizeTextarea';
 import { useSpeechRecognition } from '@/app/hooks/useSpeechRecognition';
 import { SuggestionCards } from '@/app/components/SuggestionCards';
 import { ArtifactPanel } from '@/app/components/ArtifactPanel';
 import { useArtifact } from '@/app/contexts/ArtifactContext';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import { CodeBlock } from '@/app/components/CodeBlock';
+import { cn } from '@/lib/utils';
 
 export default function Home() {
   const { chatHistory, setChatHistory, crafts, setCrafts } = useLocalStorage();
@@ -58,6 +64,8 @@ export default function Home() {
   const { isCollapsed } = useSidebar();
   const { isOpen: isArtifactOpen } = useArtifact();
 
+  const [showPreview, setShowPreview] = useState(false);
+
   const isMobile = useMediaQuery('(max-width: 768px)');
 
   const currentThread = useMemo(() =>
@@ -69,6 +77,49 @@ export default function Home() {
     currentThread ? currentThread.messages : [],
     [currentThread]
   );
+
+  const markdownComponents = useMemo(() => ({
+    table({ children }: ComponentPropsWithoutRef<'table'>) {
+        return <div className="overflow-x-auto my-4"><table className="min-w-full border-collapse border border-border text-sm">{children}</table></div>
+    },
+    thead({ children }: ComponentPropsWithoutRef<'thead'>) {
+        return <thead className="bg-muted/50">{children}</thead>
+    },
+    th({ children }: ComponentPropsWithoutRef<'th'>) {
+        return <th className="border border-border px-4 py-2 text-left font-medium">{children}</th>
+    },
+    td({ children }: ComponentPropsWithoutRef<'td'>) {
+        return <td className="border border-border px-4 py-2">{children}</td>
+    },
+    a({ href, children }: ComponentPropsWithoutRef<'a'>) {
+        return <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-4">{children}</a>
+    },
+    ul({ children }: ComponentPropsWithoutRef<'ul'>) {
+        return <ul className="list-disc pl-4 my-2 space-y-1">{children}</ul>
+    },
+    ol({ children }: ComponentPropsWithoutRef<'ol'>) {
+        return <ol className="list-decimal pl-4 my-2 space-y-1">{children}</ol>
+    },
+    code({ className, children, ...props }: ComponentPropsWithoutRef<'code'>) {
+      const match = /language-(\w+)/.exec(className || '');
+      const isInline = !match && !String(children).includes('\n');
+
+      if (!isInline) {
+        return (
+          <CodeBlock
+            language={match ? match[1] : ''}
+            value={String(children).replace(/\n$/, '')}
+          />
+        );
+      }
+
+      return (
+        <code className={cn("bg-black/10 dark:bg-white/10 rounded px-1 py-0.5 font-mono text-xs", className)} {...props}>
+          {children}
+        </code>
+      );
+    }
+  }), []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -513,46 +564,88 @@ export default function Home() {
 
           {/* Input Area */}
           <div className="p-4 bg-background border-t border-border z-30 relative">
-              <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative flex items-end bg-muted rounded-2xl ring-offset-background focus-within:ring-2 focus-within:ring-primary/50 transition-shadow">
-                  {hasSupport && (
-                      <button
-                          type="button"
-                          onClick={handleMicClick}
-                          className={`p-3 rounded-xl transition-colors mb-1 ml-1 ${
-                              isListening
-                              ? 'text-red-500 bg-red-500/10 animate-pulse'
-                              : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
-                          }`}
-                          title={isListening ? 'Stop listening' : 'Start voice input'}
-                      >
-                          {isListening ? <MicOff size={18} /> : <Mic size={18} />}
-                      </button>
+              <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative flex flex-col bg-muted rounded-2xl ring-offset-background focus-within:ring-2 focus-within:ring-primary/50 transition-shadow">
+
+                  {/* Toolbar */}
+                  {input.trim() && (
+                      <div className="flex justify-end px-2 pt-2">
+                           <button
+                             type="button"
+                             onClick={() => setShowPreview(!showPreview)}
+                             className="p-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-background/50 rounded-md transition-colors flex items-center gap-1.5"
+                           >
+                               {showPreview ? (
+                                   <>
+                                     <Pencil size={12} />
+                                     <span>Edit</span>
+                                   </>
+                               ) : (
+                                   <>
+                                     <Eye size={12} />
+                                     <span>Preview</span>
+                                   </>
+                               )}
+                           </button>
+                      </div>
                   )}
-                  <AutoResizeTextarea
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onEnter={() => handleSubmit()}
-                      placeholder={isListening ? "Listening..." : "Message Atonin..."}
-                      disabled={isLoading || isListening}
-                      className="w-full bg-transparent text-foreground placeholder-muted-foreground py-3 pl-2 pr-12 max-h-[200px]"
-                  />
-                  {isLoading ? (
-                     <button
-                        type="button"
-                        onClick={stopGeneration}
-                        className="absolute right-2 bottom-2 p-2 bg-red-500 text-white rounded-xl hover:opacity-90 transition-opacity"
-                     >
-                        <Square size={18} fill="currentColor" />
-                     </button>
-                  ) : (
-                    <button
-                        type="submit"
-                        disabled={!input.trim()}
-                        className="absolute right-2 bottom-2 p-2 bg-primary text-primary-foreground rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
-                    >
-                        <Send size={18} />
-                    </button>
-                  )}
+
+                  <div className="flex items-end w-full">
+                      {hasSupport && (
+                          <button
+                              type="button"
+                              onClick={handleMicClick}
+                              className={`p-3 rounded-xl transition-colors mb-1 ml-1 ${
+                                  isListening
+                                  ? 'text-red-500 bg-red-500/10 animate-pulse'
+                                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+                              }`}
+                              title={isListening ? 'Stop listening' : 'Start voice input'}
+                          >
+                              {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+                          </button>
+                      )}
+
+                      {showPreview ? (
+                          <div className="w-full min-h-[50px] max-h-[200px] overflow-y-auto py-3 pl-2 pr-12">
+                              <div className="prose dark:prose-invert prose-sm max-w-none">
+                                  <ReactMarkdown
+                                    remarkPlugins={[remarkGfm, remarkMath]}
+                                    rehypePlugins={[rehypeKatex]}
+                                    components={markdownComponents}
+                                  >
+                                    {input}
+                                  </ReactMarkdown>
+                              </div>
+                          </div>
+                      ) : (
+                          <AutoResizeTextarea
+                              value={input}
+                              onChange={(e) => setInput(e.target.value)}
+                              onEnter={() => handleSubmit()}
+                              placeholder={isListening ? "Listening..." : "Message Atonin..."}
+                              disabled={isLoading || isListening}
+                              className="w-full bg-transparent text-foreground placeholder-muted-foreground py-3 pl-2 pr-12 max-h-[200px]"
+                          />
+                      )}
+
+                      {isLoading ? (
+                         <button
+                            type="button"
+                            onClick={stopGeneration}
+                            className="absolute right-2 bottom-2 p-2 bg-red-500 text-white rounded-xl hover:opacity-90 transition-opacity"
+                         >
+                            <Square size={18} fill="currentColor" />
+                         </button>
+                      ) : (
+                        <button
+                            type="submit"
+                            disabled={!input.trim()}
+                            className="absolute right-2 bottom-2 p-2 bg-primary text-primary-foreground rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                        >
+                            <Send size={18} />
+                        </button>
+                      )}
+                  </div>
               </form>
               <div className="flex justify-between items-center mt-2 px-1">
                   <div className="text-xs text-muted-foreground">
