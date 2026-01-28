@@ -1,0 +1,14 @@
+
+> atonin-ai@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+
+✓ Starting...
+✓ Ready in 1114ms
+○ Compiling /crafts ...
+ GET /crafts 200 in 10.2s (compile: 8.6s, render: 1638ms)
+ GET /crafts 200 in 92ms (compile: 9ms, render: 83ms)
+ GET /crafts 200 in 74ms (compile: 5ms, render: 69ms)
