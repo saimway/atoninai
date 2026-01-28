@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import Sidebar from '@/app/components/Sidebar';
 import { useLocalStorage, Craft, ChatThread, ChatMessage } from '@/app/hooks/useLocalStorage';
 import { useSettings } from '@/app/contexts/SettingsContext';
-import { Plus, Trash2, ArrowLeft, Bot, Send, Loader2, MoreVertical, Pencil, Copy, Eraser, Sparkles } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Bot, Send, Loader2, MoreVertical, Pencil, Copy, Eraser, Sparkles, Wand } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageBubble } from '@/app/components/MessageBubble';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
@@ -65,6 +65,10 @@ export default function CraftsPage() {
   const [editingCraftId, setEditingCraftId] = useState<string | null>(null);
   const [newCraftName, setNewCraftName] = useState('');
   const [newCraftInstruction, setNewCraftInstruction] = useState('');
+
+  const [showGenerator, setShowGenerator] = useState(false);
+  const [generatorInput, setGeneratorInput] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const [selectedCraftId, setSelectedCraftId] = useState<string | null>(null);
   const selectedCraft = crafts.find(c => c.id === selectedCraftId);
@@ -141,6 +145,7 @@ export default function CraftsPage() {
       setNewCraftName('');
       setNewCraftInstruction('');
       setEditingCraftId(null);
+      setShowGenerator(false);
       setIsModalOpen(true);
   };
 
@@ -154,6 +159,7 @@ export default function CraftsPage() {
       setNewCraftName(craft.name);
       setNewCraftInstruction(craft.systemInstruction);
       setEditingCraftId(craft.id);
+      setShowGenerator(false);
       setIsModalOpen(true);
   };
 
@@ -163,6 +169,46 @@ export default function CraftsPage() {
       setCrafts(crafts.filter(c => c.id !== id));
       if (selectedCraftId === id) setSelectedCraftId(null);
     }
+  };
+
+  const handleGenerateInstruction = async () => {
+      if (!generatorInput.trim() || isGenerating) return;
+      setIsGenerating(true);
+      setNewCraftInstruction('');
+
+      try {
+          const response = await fetch('/api/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  messages: [
+                      { role: 'system', content: 'You are an expert prompt engineer. Your goal is to write a detailed, effective system instruction for an AI assistant based on the user\'s request. The output should be the raw system instruction text only, without any conversational filler or "Here is the instruction:" prefixes.' },
+                      { role: 'user', content: generatorInput }
+                  ],
+                  modelId: 'llama-3.3-70b-versatile',
+                  apiKey,
+              }),
+          });
+
+          if (!response.ok) throw new Error('Failed');
+
+          const reader = response.body?.getReader();
+          const decoder = new TextDecoder();
+
+          while (true) {
+              const { done, value } = await reader!.read();
+              if (done) break;
+              const text = decoder.decode(value, { stream: true });
+              setNewCraftInstruction(prev => prev + text);
+          }
+          setShowGenerator(false);
+          setGeneratorInput('');
+
+      } catch (err) {
+          console.error(err);
+      } finally {
+          setIsGenerating(false);
+      }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -483,7 +529,50 @@ export default function CraftsPage() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-sm font-medium text-muted-foreground mb-1 block">Instructions</label>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <label className="text-sm font-medium text-muted-foreground block">Instructions</label>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowGenerator(!showGenerator)}
+                                                className="text-xs flex items-center gap-1 text-primary hover:underline"
+                                            >
+                                                <Wand size={12} />
+                                                {showGenerator ? 'Cancel Generation' : 'Generate with AI'}
+                                            </button>
+                                        </div>
+
+                                        <AnimatePresence>
+                                            {showGenerator && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0, marginBottom: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1, marginBottom: 16 }}
+                                                    exit={{ height: 0, opacity: 0, marginBottom: 0 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="bg-muted/50 p-3 rounded-lg border border-primary/20">
+                                                        <label className="text-xs font-medium text-muted-foreground mb-2 block">Describe your persona</label>
+                                                        <div className="flex gap-2">
+                                                            <input
+                                                                value={generatorInput}
+                                                                onChange={e => setGeneratorInput(e.target.value)}
+                                                                placeholder="e.g. A strict math teacher who loves puns..."
+                                                                className="flex-1 bg-background rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                                                                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleGenerateInstruction())}
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleGenerateInstruction}
+                                                                disabled={isGenerating || !generatorInput.trim()}
+                                                                className="bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-xs font-medium disabled:opacity-50"
+                                                            >
+                                                                {isGenerating ? <Loader2 size={14} className="animate-spin" /> : 'Generate'}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+
                                         <textarea
                                             required
                                             value={newCraftInstruction}
