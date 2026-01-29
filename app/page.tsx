@@ -9,11 +9,12 @@ import { useLocalStorage, ChatMessage, ChatThread } from '@/app/hooks/useLocalSt
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 import { useSidebar } from '@/app/contexts/SidebarContext';
 import { useSettings } from '@/app/contexts/SettingsContext';
-import { Send, MoreVertical, Loader2, Square, Download, Search, X, ArrowDown, Mic, MicOff, Eye, Pencil } from 'lucide-react';
+import { Send, MoreVertical, Loader2, Square, Download, Search, X, ArrowDown, Mic, MicOff, Eye, Pencil, Book } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AutoResizeTextarea } from '@/app/components/AutoResizeTextarea';
 import { useSpeechRecognition } from '@/app/hooks/useSpeechRecognition';
 import { SuggestionCards } from '@/app/components/SuggestionCards';
+import { PromptLibraryModal } from '@/app/components/PromptLibraryModal';
 import { ArtifactPanel } from '@/app/components/ArtifactPanel';
 import { useArtifact } from '@/app/contexts/ArtifactContext';
 import ReactMarkdown from 'react-markdown';
@@ -30,6 +31,7 @@ export default function Home() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentModel, setCurrentModel] = useState(MODELS[0].id);
+  const [isPromptLibraryOpen, setIsPromptLibraryOpen] = useState(false);
 
   // Speech Recognition
   const { isListening, transcript, startListening, stopListening, hasSupport, resetTranscript } = useSpeechRecognition();
@@ -390,6 +392,10 @@ export default function Home() {
 
   }, [chatHistory, currentChatId, isLoading, setChatHistory, currentModel]);
 
+  const handleSelectPrompt = (promptContent: string) => {
+    setInput(prev => prev + (prev ? '\n\n' : '') + promptContent);
+  };
+
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
       <Sidebar
@@ -590,6 +596,15 @@ export default function Home() {
                   )}
 
                   <div className="flex items-end w-full">
+                      <button
+                        type="button"
+                        onClick={() => setIsPromptLibraryOpen(true)}
+                        className="p-3 rounded-xl transition-colors mb-1 ml-1 text-muted-foreground hover:text-foreground hover:bg-background/50"
+                        title="Prompt Library"
+                      >
+                          <Book size={18} />
+                      </button>
+
                       {hasSupport && (
                           <button
                               type="button"
@@ -658,6 +673,11 @@ export default function Home() {
           </div>
       </div>
       <ArtifactPanel />
+      <PromptLibraryModal
+        isOpen={isPromptLibraryOpen}
+        onClose={() => setIsPromptLibraryOpen(false)}
+        onSelectPrompt={handleSelectPrompt}
+      />
     </div>
   );
 }

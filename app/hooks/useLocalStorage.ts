@@ -22,9 +22,17 @@ export interface Craft {
   createdAt: number;
 }
 
+export interface SavedPrompt {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: number;
+}
+
 export function useLocalStorage() {
   const [chatHistory, setChatHistory] = useState<ChatThread[]>([]);
   const [crafts, setCrafts] = useState<Craft[]>([]);
+  const [prompts, setPrompts] = useState<SavedPrompt[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -39,6 +47,12 @@ export function useLocalStorage() {
         if (savedCrafts) {
           setCrafts(JSON.parse(savedCrafts));
         }
+
+        const savedPrompts = localStorage.getItem('atonin_prompts');
+        if (savedPrompts) {
+          setPrompts(JSON.parse(savedPrompts));
+        }
+
         setIsLoaded(true);
     };
 
@@ -58,11 +72,18 @@ export function useLocalStorage() {
     localStorage.setItem('atonin_crafts', JSON.stringify(newCrafts));
   };
 
+  const savePrompts = (newPrompts: SavedPrompt[]) => {
+    setPrompts(newPrompts);
+    localStorage.setItem('atonin_prompts', JSON.stringify(newPrompts));
+  };
+
   return {
     chatHistory,
     setChatHistory: saveChatHistory,
     crafts,
     setCrafts: saveCrafts,
+    prompts,
+    setPrompts: savePrompts,
     isLoaded,
   };
 }
