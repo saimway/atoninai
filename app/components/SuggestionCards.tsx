@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Code, Cpu, Map } from 'lucide-react';
+import { FileText, Code, Cpu, BarChart } from 'lucide-react';
 
 interface SuggestionCardsProps {
   onSelect: (text: string) => void;
@@ -24,9 +24,9 @@ export function SuggestionCards({ onSelect }: SuggestionCardsProps) {
       prompt: "Explain the concept of quantum computing in simple terms."
     },
     {
-      icon: Map,
-      title: "Plan a trip",
-      prompt: "Create a 3-day travel itinerary for "
+      icon: BarChart,
+      title: "Visualize data",
+      prompt: "Create a chart showing the quarterly revenue growth of a tech startup."
     }
   ];
 

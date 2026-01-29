@@ -103,7 +103,7 @@ export default function Home() {
         return <ol className="list-decimal pl-4 my-2 space-y-1">{children}</ol>
     },
     code({ className, children, ...props }: ComponentPropsWithoutRef<'code'>) {
-      const match = /language-(\w+)/.exec(className || '');
+      const match = /language-([\w-]+)/.exec(className || '');
       const isInline = !match && !String(children).includes('\n');
 
       if (!isInline) {
