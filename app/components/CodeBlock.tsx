@@ -5,6 +5,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Check, Copy, Eye, Code, PanelRightOpen } from 'lucide-react';
 import { useArtifact } from '@/app/contexts/ArtifactContext';
+import { ChartRenderer } from '@/app/components/ChartRenderer';
 
 interface CodeBlockProps {
   language: string;
@@ -16,7 +17,7 @@ export function CodeBlock({ language, value }: CodeBlockProps) {
   const [view, setView] = useState<'code' | 'preview'>('code');
   const { openArtifact } = useArtifact();
 
-  const isPreviewable = ['html', 'svg'].includes(language?.toLowerCase());
+  const isPreviewable = ['html', 'svg', 'chart', 'json-chart'].includes(language?.toLowerCase());
 
   const copyToClipboard = async () => {
     if (!navigator.clipboard) return;
@@ -46,6 +47,7 @@ export function CodeBlock({ language, value }: CodeBlockProps) {
           {isPreviewable && (
             <div className="flex items-center gap-1 bg-zinc-800 rounded p-0.5">
               <button
+                type="button"
                 onClick={() => setView('code')}
                 className={`p-1 rounded ${view === 'code' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-300'}`}
                 title="Code"
@@ -53,6 +55,7 @@ export function CodeBlock({ language, value }: CodeBlockProps) {
                 <Code size={14} />
               </button>
               <button
+                type="button"
                 onClick={() => setView('preview')}
                 className={`p-1 rounded ${view === 'preview' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-300'}`}
                 title="Preview"
@@ -65,6 +68,7 @@ export function CodeBlock({ language, value }: CodeBlockProps) {
 
         <div className="flex items-center gap-3">
             <button
+                type="button"
                 onClick={handleOpenArtifact}
                 className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
                 title="Open in Side Panel"
@@ -74,6 +78,7 @@ export function CodeBlock({ language, value }: CodeBlockProps) {
             </button>
             <div className="w-px h-4 bg-zinc-800" />
             <button
+              type="button"
               onClick={copyToClipboard}
               className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
             >
@@ -93,7 +98,7 @@ export function CodeBlock({ language, value }: CodeBlockProps) {
       </div>
 
       {view === 'preview' && isPreviewable ? (
-        <div className="bg-white p-4 overflow-auto min-h-[100px] flex items-center justify-center checkered-bg">
+        <div className={`p-4 overflow-auto min-h-[100px] flex items-center justify-center ${['html', 'svg'].includes(language.toLowerCase()) ? 'bg-white checkered-bg' : ''}`}>
            {language.toLowerCase() === 'html' && (
              <iframe
                 srcDoc={value}
@@ -107,6 +112,9 @@ export function CodeBlock({ language, value }: CodeBlockProps) {
                dangerouslySetInnerHTML={{ __html: value }}
                className="flex items-center justify-center w-full"
              />
+           )}
+           {(language.toLowerCase() === 'chart' || language.toLowerCase() === 'json-chart') && (
+             <ChartRenderer code={value} />
            )}
         </div>
       ) : (
