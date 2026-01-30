@@ -6,8 +6,8 @@ import { ChevronDown } from 'lucide-react';
 
 export const MODELS = [
   { id: 'llama-3.3-70b-versatile', name: 'Atonin V1' },
-  { id: 'openai/gpt-oss-120b', name: 'Atonin (Thinking)' },
-  { id: 'groq/compound', name: 'Atonin (HIGH)' },
+  { id: 'mixtral-8x7b-32768', name: 'Atonin Balanced' },
+  { id: 'llama-3.1-8b-instant', name: 'Atonin Fast' },
 ];
 
 interface ModelSelectorProps {
@@ -25,7 +25,7 @@ export function ModelSelector({ currentModelId, onSelectModel, disabled }: Model
       <button
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 hover:bg-muted text-sm font-medium text-foreground transition-colors"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 hover:bg-muted text-sm font-medium text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <span>{selectedModel.name}</span>
         <ChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />

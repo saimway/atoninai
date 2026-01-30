@@ -6,6 +6,7 @@ import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Check, Copy, Eye, Code, PanelRightOpen } from 'lucide-react';
 import { useArtifact } from '@/app/contexts/ArtifactContext';
 import { ChartRenderer } from '@/app/components/ChartRenderer';
+import { MermaidRenderer } from '@/app/components/MermaidRenderer';
 
 interface CodeBlockProps {
   language: string;
@@ -17,7 +18,7 @@ export function CodeBlock({ language, value }: CodeBlockProps) {
   const [view, setView] = useState<'code' | 'preview'>('code');
   const { openArtifact } = useArtifact();
 
-  const isPreviewable = ['html', 'svg', 'chart', 'json-chart'].includes(language?.toLowerCase());
+  const isPreviewable = ['html', 'svg', 'chart', 'json-chart', 'mermaid'].includes(language?.toLowerCase());
 
   const copyToClipboard = async () => {
     if (!navigator.clipboard) return;
@@ -115,6 +116,9 @@ export function CodeBlock({ language, value }: CodeBlockProps) {
            )}
            {(language.toLowerCase() === 'chart' || language.toLowerCase() === 'json-chart') && (
              <ChartRenderer code={value} />
+           )}
+           {language.toLowerCase() === 'mermaid' && (
+             <MermaidRenderer code={value} />
            )}
         </div>
       ) : (
