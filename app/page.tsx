@@ -9,7 +9,7 @@ import { useLocalStorage, ChatMessage, ChatThread } from '@/app/hooks/useLocalSt
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 import { useSidebar } from '@/app/contexts/SidebarContext';
 import { useSettings } from '@/app/contexts/SettingsContext';
-import { Send, MoreVertical, Loader2, Square, Download, Search, X, ArrowDown, Mic, MicOff, Eye, Pencil, Book } from 'lucide-react';
+import { Send, MoreVertical, Loader2, Square, Download, Search, X, ArrowDown, Mic, MicOff, Eye, Pencil, Book, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AutoResizeTextarea } from '@/app/components/AutoResizeTextarea';
 import { useSpeechRecognition } from '@/app/hooks/useSpeechRecognition';
@@ -161,6 +161,22 @@ export default function Home() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleClearChat = async () => {
+    if (!currentChatId || isLoading) return;
+    if (!confirm('Are you sure you want to clear this conversation?')) return;
+
+    const threadIndex = chatHistory.findIndex(t => t.id === currentChatId);
+    if (threadIndex === -1) return;
+
+    const newHistory = [...chatHistory];
+    newHistory[threadIndex] = {
+        ...newHistory[threadIndex],
+        messages: [],
+        updatedAt: Date.now()
+    };
+    setChatHistory(newHistory);
   };
 
   const handleNewChat = () => {
@@ -477,13 +493,22 @@ export default function Home() {
                      <Search size={18} />
                  </button>
                  {messages.length > 0 && (
-                     <button
-                        onClick={handleExportMarkdown}
-                        className="p-2 hover:bg-muted rounded-md text-muted-foreground transition-colors"
-                        title="Export Chat to Markdown"
-                     >
-                         <Download size={18} />
-                     </button>
+                     <>
+                        <button
+                            onClick={handleClearChat}
+                            className="p-2 hover:bg-muted rounded-md text-muted-foreground transition-colors hover:text-red-500"
+                            title="Clear Chat"
+                        >
+                            <Trash2 size={18} />
+                        </button>
+                        <button
+                            onClick={handleExportMarkdown}
+                            className="p-2 hover:bg-muted rounded-md text-muted-foreground transition-colors"
+                            title="Export Chat to Markdown"
+                        >
+                            <Download size={18} />
+                        </button>
+                     </>
                  )}
               </div>
           </div>
