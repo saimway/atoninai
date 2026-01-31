@@ -122,7 +122,7 @@ export function CodeBlock({ language, value }: CodeBlockProps) {
            )}
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-auto max-h-[600px]">
           <SyntaxHighlighter
             language={language}
             style={oneDark}
