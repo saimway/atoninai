@@ -9,7 +9,7 @@ import { useLocalStorage, ChatMessage, ChatThread } from '@/app/hooks/useLocalSt
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 import { useSidebar } from '@/app/contexts/SidebarContext';
 import { useSettings } from '@/app/contexts/SettingsContext';
-import { Send, MoreVertical, Loader2, Square, Download, Search, X, ArrowDown, Mic, MicOff, Eye, Pencil, Book, Trash2 } from 'lucide-react';
+import { Send, MoreVertical, Loader2, Square, Download, Search, X, ArrowDown, Mic, MicOff, Eye, Pencil, Book, Trash2, Paperclip, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AutoResizeTextarea } from '@/app/components/AutoResizeTextarea';
 import { useSpeechRecognition } from '@/app/hooks/useSpeechRecognition';
@@ -32,6 +32,50 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentModel, setCurrentModel] = useState(MODELS[0].id);
   const [isPromptLibraryOpen, setIsPromptLibraryOpen] = useState(false);
+
+  // File Attachments
+  const [attachments, setAttachments] = useState<Array<{ id: string; file: File }>>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newAttachments = Array.from(e.target.files).map(file => ({
+        id: uuidv4(),
+        file
+      }));
+
+      // Filter by size (max 1MB)
+      const validAttachments = newAttachments.filter(a => a.file.size <= 1024 * 1024);
+
+      if (validAttachments.length < newAttachments.length) {
+        alert("Some files were skipped because they exceed the 1MB limit.");
+      }
+
+      setAttachments(prev => [...prev, ...validAttachments]);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments(prev => prev.filter(a => a.id !== id));
+  };
+
+  const readFiles = async () => {
+    return Promise.all(attachments.map(async (a) => {
+      return new Promise<{name: string, content: string}>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const content = e.target?.result as string;
+          resolve({
+            name: a.file.name,
+            content
+          });
+        };
+        reader.onerror = reject;
+        reader.readAsText(a.file);
+      });
+    }));
+  };
 
   // Speech Recognition
   const { isListening, transcript, startListening, stopListening, hasSupport, resetTranscript } = useSpeechRecognition();
@@ -341,11 +385,32 @@ export default function Home() {
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && attachments.length === 0) || isLoading) return;
 
-    const userMessage: ChatMessage = { role: 'user', content: input.trim() };
-    setInput('');
     setIsLoading(true);
+
+    let messageContent = input.trim();
+
+    if (attachments.length > 0) {
+      try {
+        const fileContents = await readFiles();
+        const fileContext = fileContents.map(f => {
+            const ext = f.name.split('.').pop() || 'text';
+            return `File: ${f.name}\n\`\`\`${ext}\n${f.content}\n\`\`\``;
+        }).join('\n\n');
+
+        messageContent = `${fileContext}\n\n${messageContent}`.trim();
+      } catch (error) {
+        console.error("Error reading files", error);
+        alert("Failed to read attached files.");
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    const userMessage: ChatMessage = { role: 'user', content: messageContent };
+    setInput('');
+    setAttachments([]);
 
     let threadId = currentChatId;
     let newHistory = [...chatHistory];
@@ -620,7 +685,42 @@ export default function Home() {
                       </div>
                   )}
 
+                  {attachments.length > 0 && (
+                      <div className="flex flex-wrap gap-2 px-3 pt-3 pb-1 border-b border-border/10">
+                          {attachments.map(a => (
+                              <div key={a.id} className="flex items-center gap-1.5 bg-background border border-border/50 rounded-md px-2 py-1 text-xs text-muted-foreground group">
+                                  <FileText size={12} />
+                                  <span className="max-w-[150px] truncate">{a.file.name}</span>
+                                  <span className="text-[10px] text-muted-foreground/50">({Math.round(a.file.size/1024)}KB)</span>
+                                  <button
+                                      type="button"
+                                      onClick={() => removeAttachment(a.id)}
+                                      className="ml-1 p-0.5 hover:bg-muted-foreground/10 rounded-full transition-colors"
+                                  >
+                                      <X size={12} />
+                                  </button>
+                              </div>
+                          ))}
+                      </div>
+                  )}
+
                   <div className="flex items-end w-full">
+                      <input
+                          type="file"
+                          multiple
+                          ref={fileInputRef}
+                          className="hidden"
+                          onChange={handleFileSelect}
+                      />
+                      <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="p-3 rounded-xl transition-colors mb-1 ml-1 text-muted-foreground hover:text-foreground hover:bg-background/50"
+                          title="Attach files"
+                      >
+                          <Paperclip size={18} />
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => setIsPromptLibraryOpen(true)}
@@ -679,7 +779,7 @@ export default function Home() {
                       ) : (
                         <button
                             type="submit"
-                            disabled={!input.trim()}
+                            disabled={!input.trim() && attachments.length === 0}
                             className="absolute right-2 bottom-2 p-2 bg-primary text-primary-foreground rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
                         >
                             <Send size={18} />
