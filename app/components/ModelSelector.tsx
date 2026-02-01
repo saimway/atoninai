@@ -8,6 +8,7 @@ export const MODELS = [
   { id: 'llama-3.3-70b-versatile', name: 'Atonin V1' },
   { id: 'mixtral-8x7b-32768', name: 'Atonin Balanced' },
   { id: 'llama-3.1-8b-instant', name: 'Atonin Fast' },
+  { id: 'llama-3.2-90b-vision-preview', name: 'Atonin Vision' },
 ];
 
 interface ModelSelectorProps {

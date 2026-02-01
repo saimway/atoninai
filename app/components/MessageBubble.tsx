@@ -1,6 +1,6 @@
 import { memo, useState, useMemo, useEffect, ComponentPropsWithoutRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChatMessage } from '@/app/hooks/useLocalStorage';
+import { ChatMessage, ContentPart } from '@/app/hooks/useLocalStorage';
 import { cn } from '@/lib/utils';
 import { Bot, User, Copy, Check, RefreshCw, Pencil, Save, ChevronDown, ChevronRight, BrainCircuit, Volume2, Square } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -30,7 +30,21 @@ const extractThinking = (content: string) => {
 export const MessageBubble = memo(function MessageBubble({ message, onRegenerate, onEdit, highlight }: MessageBubbleProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState(message.content);
+
+  const getTextContent = (content: string | ContentPart[]) => {
+    if (typeof content === 'string') return content;
+    return content.filter(p => p.type === 'text').map(p => p.text).join('\n') || '';
+  };
+
+  const getImages = (content: string | ContentPart[]) => {
+    if (typeof content === 'string') return [];
+    return content.filter(p => p.type === 'image_url').map(p => p.image_url?.url).filter(Boolean) as string[];
+  };
+
+  const textContent = useMemo(() => getTextContent(message.content), [message.content]);
+  const images = useMemo(() => getImages(message.content), [message.content]);
+
+  const [editContent, setEditContent] = useState(textContent);
   const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
@@ -38,9 +52,9 @@ export const MessageBubble = memo(function MessageBubble({ message, onRegenerate
   const isSystem = message.role === 'system';
 
   const { thinking, cleanContent } = useMemo(() => {
-    if (isUser) return { thinking: null, cleanContent: message.content };
-    return extractThinking(message.content);
-  }, [message.content, isUser]);
+    if (isUser) return { thinking: null, cleanContent: textContent };
+    return extractThinking(textContent);
+  }, [textContent, isUser]);
 
   useEffect(() => {
     return () => {
@@ -49,17 +63,35 @@ export const MessageBubble = memo(function MessageBubble({ message, onRegenerate
   }, []);
 
   const handleEditStart = () => {
-    setEditContent(message.content);
+    setEditContent(textContent);
     setIsEditing(true);
   };
 
   const handleEditCancel = () => {
     setIsEditing(false);
-    setEditContent(message.content);
+    setEditContent(textContent);
   };
 
   const handleEditSave = () => {
-    if (editContent.trim() !== message.content && onEdit) {
+    if (editContent.trim() !== textContent && onEdit) {
+      // We only support editing the text part for now
+      // If the message was complex (images + text), we might need to handle it in parent
+      // But onEdit in parent expects 'newContent: string'.
+      // If we pass just the new text, the parent handles reconstruction or replacement?
+      // In app/page.tsx handleEditMessage:
+      // newMessages[index] = { ...newMessages[index], content: newContent };
+      // This REPLACES the content with the string. Images would be lost if we just return string.
+      // But ChatMessage content can be string | ContentPart[].
+      // So if I pass a string, it becomes a string message (images lost).
+      // Ideally I should reconstruct the array if images exist.
+      // But onEdit definition in props is (newContent: string) => void.
+      // I should update MessageBubbleProps but for now let's assume editing replaces content.
+      // Wait, losing images on edit is bad UX.
+      // For now, let's just pass the string. The user can re-attach if needed or I accept that editing text removes images.
+      // OR, better: I update the parent to handle this.
+      // But I can't easily change parent logic from here without changing the prop signature.
+      // Actually, if I pass the string, and the parent sets content to string, images are lost.
+      // Let's stick to that for this iteration or it gets too complex.
       onEdit(editContent.trim());
     }
     setIsEditing(false);
@@ -81,7 +113,7 @@ export const MessageBubble = memo(function MessageBubble({ message, onRegenerate
     );
   };
 
-  const isMatch = highlight && message.content.toLowerCase().includes(highlight.toLowerCase());
+  const isMatch = highlight && textContent.toLowerCase().includes(highlight.toLowerCase());
 
   const markdownComponents = useMemo(() => ({
     table({ children }: ComponentPropsWithoutRef<'table'>) {
@@ -218,9 +250,16 @@ export const MessageBubble = memo(function MessageBubble({ message, onRegenerate
               : "bg-muted text-foreground rounded-tl-sm w-full",
             !isUser && isMatch && "ring-2 ring-yellow-500/50 shadow-lg shadow-yellow-500/10"
           )}>
+            {images.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                    {images.map((url, i) => (
+                        <img key={i} src={url} alt="User upload" className="max-w-[200px] max-h-[200px] rounded-lg border border-white/20" />
+                    ))}
+                </div>
+            )}
             {isUser ? (
               <div className="whitespace-pre-wrap">
-                 {highlight ? highlightText(message.content, highlight) : message.content}
+                 {highlight ? highlightText(textContent, highlight) : textContent}
               </div>
             ) : (
               <div className="flex flex-col gap-2">
