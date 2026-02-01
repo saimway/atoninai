@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import Sidebar from '@/app/components/Sidebar';
 import { MessageBubble } from '@/app/components/MessageBubble';
 import { ModelSelector, MODELS } from '@/app/components/ModelSelector';
-import { useLocalStorage, ChatMessage, ChatThread } from '@/app/hooks/useLocalStorage';
+import { useLocalStorage, ChatMessage, ChatThread, ContentPart } from '@/app/hooks/useLocalStorage';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 import { useSidebar } from '@/app/contexts/SidebarContext';
 import { useSettings } from '@/app/contexts/SettingsContext';
@@ -62,17 +62,22 @@ export default function Home() {
 
   const readFiles = async () => {
     return Promise.all(attachments.map(async (a) => {
-      return new Promise<{name: string, content: string}>((resolve, reject) => {
+      return new Promise<{name: string, content: string, type: string}>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
           const content = e.target?.result as string;
           resolve({
             name: a.file.name,
-            content
+            content,
+            type: a.file.type
           });
         };
         reader.onerror = reject;
-        reader.readAsText(a.file);
+        if (a.file.type.startsWith('image/')) {
+            reader.readAsDataURL(a.file);
+        } else {
+            reader.readAsText(a.file);
+        }
       });
     }));
   };
@@ -193,7 +198,20 @@ export default function Home() {
 
     currentThread.messages.forEach(msg => {
       const role = msg.role === 'user' ? 'User' : 'Atonin';
-      markdown += `**${role}**:\n${msg.content}\n\n`;
+      let content = '';
+      if (typeof msg.content === 'string') {
+          content = msg.content;
+      } else {
+          content = msg.content
+            .filter(p => p.type === 'text')
+            .map(p => p.text)
+            .join('\n');
+          const images = msg.content.filter(p => p.type === 'image_url').length;
+          if (images > 0) {
+              content += `\n\n*[${images} image(s) attached]*`;
+          }
+      }
+      markdown += `**${role}**:\n${content}\n\n`;
     });
 
     const blob = new Blob([markdown], { type: 'text/markdown' });
@@ -389,17 +407,36 @@ export default function Home() {
 
     setIsLoading(true);
 
-    let messageContent = input.trim();
+    let finalContent: string | ContentPart[] = input.trim();
 
     if (attachments.length > 0) {
       try {
         const fileContents = await readFiles();
-        const fileContext = fileContents.map(f => {
-            const ext = f.name.split('.').pop() || 'text';
-            return `File: ${f.name}\n\`\`\`${ext}\n${f.content}\n\`\`\``;
-        }).join('\n\n');
+        const textFiles = fileContents.filter(f => !f.type.startsWith('image/'));
+        const imageFiles = fileContents.filter(f => f.type.startsWith('image/'));
 
-        messageContent = `${fileContext}\n\n${messageContent}`.trim();
+        let textContext = '';
+        if (textFiles.length > 0) {
+            textContext = textFiles.map(f => {
+                const ext = f.name.split('.').pop() || 'text';
+                return `File: ${f.name}\n\`\`\`${ext}\n${f.content}\n\`\`\``;
+            }).join('\n\n');
+        }
+
+        const combinedText = `${textContext}\n\n${input.trim()}`.trim();
+
+        if (imageFiles.length > 0) {
+            finalContent = [
+                { type: 'text', text: combinedText },
+                ...imageFiles.map(img => ({
+                    type: 'image_url' as const,
+                    image_url: { url: img.content }
+                }))
+            ];
+        } else {
+            finalContent = combinedText;
+        }
+
       } catch (error) {
         console.error("Error reading files", error);
         alert("Failed to read attached files.");
@@ -408,7 +445,7 @@ export default function Home() {
       }
     }
 
-    const userMessage: ChatMessage = { role: 'user', content: messageContent };
+    const userMessage: ChatMessage = { role: 'user', content: finalContent };
     setInput('');
     setAttachments([]);
 

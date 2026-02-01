@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { SidebarItem } from './SidebarItem';
 import { MessageSquare, Hammer, Settings, Menu, X, Plus, Search, Trash2, Star, Keyboard } from 'lucide-react';
 import { useSidebar } from '@/app/contexts/SidebarContext';
-import { ChatThread, Craft } from '@/app/hooks/useLocalStorage';
+import { ChatThread, Craft, ContentPart } from '@/app/hooks/useLocalStorage';
 import { SettingsModal } from './SettingsModal';
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import { cn } from '@/lib/utils';
@@ -94,6 +94,11 @@ export default function Sidebar({
     ? (isOpen ? 'mobileOpen' : 'mobileClosed')
     : (isCollapsed ? 'collapsed' : 'open');
 
+  const getMessageText = (content: string | ContentPart[]) => {
+      if (typeof content === 'string') return content;
+      return content.filter(p => p.type === 'text').map(p => p.text).join('\n') || '';
+  };
+
   // Filter and Group Chats
   const groupedChats = useMemo(() => {
     const query = searchQuery.toLowerCase();
@@ -104,12 +109,13 @@ export default function Sidebar({
         let matchSnippet: string | undefined;
 
         if (!titleMatch && query) {
-            const matchingMsg = chat.messages.find(msg => msg.content.toLowerCase().includes(query));
+            const matchingMsg = chat.messages.find(msg => getMessageText(msg.content).toLowerCase().includes(query));
             if (matchingMsg) {
-                const index = matchingMsg.content.toLowerCase().indexOf(query);
+                const contentText = getMessageText(matchingMsg.content);
+                const index = contentText.toLowerCase().indexOf(query);
                 const start = Math.max(0, index - 20);
-                const end = Math.min(matchingMsg.content.length, index + query.length + 20);
-                matchSnippet = (start > 0 ? '...' : '') + matchingMsg.content.slice(start, end) + (end < matchingMsg.content.length ? '...' : '');
+                const end = Math.min(contentText.length, index + query.length + 20);
+                matchSnippet = (start > 0 ? '...' : '') + contentText.slice(start, end) + (end < contentText.length ? '...' : '');
             }
         }
 
