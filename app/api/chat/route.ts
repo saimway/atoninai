@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, modelId, systemInstruction, apiKey } = await req.json();
+    const { messages, modelId, systemInstruction, apiKey, temperature, topP, maxTokens } = await req.json();
 
     const groq = new Groq({
       apiKey: apiKey || process.env.GROQ_API_KEY,
@@ -31,6 +31,9 @@ export async function POST(req: NextRequest) {
       messages: currentMessages,
       model: modelId,
       stream: true,
+      temperature: temperature ?? 0.7,
+      top_p: topP ?? 1.0,
+      max_tokens: maxTokens ?? 4096,
     });
 
     const encoder = new TextEncoder();
