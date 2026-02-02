@@ -7,6 +7,12 @@ interface SettingsContextType {
   setApiKey: (key: string) => void;
   customInstructions: string;
   setCustomInstructions: (instructions: string) => void;
+  temperature: number;
+  setTemperature: (temp: number) => void;
+  topP: number;
+  setTopP: (val: number) => void;
+  maxTokens: number;
+  setMaxTokens: (val: number) => void;
   isLoaded: boolean;
 }
 
@@ -15,6 +21,12 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [apiKey, setApiKeyState] = useState('');
   const [customInstructions, setCustomInstructionsState] = useState('');
+
+  // Model Parameters Defaults
+  const [temperature, setTemperatureState] = useState(0.7);
+  const [topP, setTopPState] = useState(1.0);
+  const [maxTokens, setMaxTokensState] = useState(4096);
+
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -22,8 +34,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings);
-        if (parsed.apiKey) setApiKeyState(parsed.apiKey);
-        if (parsed.customInstructions) setCustomInstructionsState(parsed.customInstructions);
+        if (parsed.apiKey !== undefined) setApiKeyState(parsed.apiKey);
+        if (parsed.customInstructions !== undefined) setCustomInstructionsState(parsed.customInstructions);
+        if (parsed.temperature !== undefined) setTemperatureState(Number(parsed.temperature));
+        if (parsed.topP !== undefined) setTopPState(Number(parsed.topP));
+        if (parsed.maxTokens !== undefined) setMaxTokensState(Number(parsed.maxTokens));
       } catch (e) {
         console.error('Failed to parse settings', e);
       }
@@ -31,23 +46,62 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setIsLoaded(true);
   }, []);
 
-  const saveSettings = (newApiKey: string, newInstructions: string) => {
-    const settings = { apiKey: newApiKey, customInstructions: newInstructions };
-    localStorage.setItem('atonin_settings', JSON.stringify(settings));
+  const saveSettings = (newSettings: Partial<SettingsContextType>) => {
+    const currentSettings = {
+      apiKey,
+      customInstructions,
+      temperature,
+      topP,
+      maxTokens,
+      ...newSettings
+    };
+
+    // Filter out functions and non-serializable data just in case, though here we control the object
+    const toSave = {
+        apiKey: currentSettings.apiKey,
+        customInstructions: currentSettings.customInstructions,
+        temperature: currentSettings.temperature,
+        topP: currentSettings.topP,
+        maxTokens: currentSettings.maxTokens
+    };
+
+    localStorage.setItem('atonin_settings', JSON.stringify(toSave));
   };
 
   const setApiKey = (key: string) => {
     setApiKeyState(key);
-    saveSettings(key, customInstructions);
+    saveSettings({ apiKey: key });
   };
 
   const setCustomInstructions = (instructions: string) => {
     setCustomInstructionsState(instructions);
-    saveSettings(apiKey, instructions);
+    saveSettings({ customInstructions: instructions });
+  };
+
+  const setTemperature = (temp: number) => {
+    setTemperatureState(temp);
+    saveSettings({ temperature: temp });
+  };
+
+  const setTopP = (val: number) => {
+    setTopPState(val);
+    saveSettings({ topP: val });
+  };
+
+  const setMaxTokens = (val: number) => {
+    setMaxTokensState(val);
+    saveSettings({ maxTokens: val });
   };
 
   return (
-    <SettingsContext.Provider value={{ apiKey, setApiKey, customInstructions, setCustomInstructions, isLoaded }}>
+    <SettingsContext.Provider value={{
+        apiKey, setApiKey,
+        customInstructions, setCustomInstructions,
+        temperature, setTemperature,
+        topP, setTopP,
+        maxTokens, setMaxTokens,
+        isLoaded
+    }}>
       {children}
     </SettingsContext.Provider>
   );

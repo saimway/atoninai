@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Moon, Sun, Trash2, Download, Upload, AlertTriangle, Key, MessageSquareText, Eye, EyeOff } from 'lucide-react';
+import { X, Moon, Sun, Trash2, Download, Upload, AlertTriangle, Key, MessageSquareText, Eye, EyeOff, Thermometer, Zap, Hash } from 'lucide-react';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useSettings } from '@/app/contexts/SettingsContext';
 import { ChatThread, Craft } from '@/app/hooks/useLocalStorage';
@@ -25,7 +25,14 @@ export function SettingsModal({
   setCrafts
 }: SettingsModalProps) {
   const { theme, setTheme } = useTheme();
-  const { apiKey, setApiKey, customInstructions, setCustomInstructions } = useSettings();
+  const {
+    apiKey, setApiKey,
+    customInstructions, setCustomInstructions,
+    temperature, setTemperature,
+    topP, setTopP,
+    maxTokens, setMaxTokens
+  } = useSettings();
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
@@ -33,15 +40,24 @@ export function SettingsModal({
   // Local state for inputs to avoid excessive context updates/localStorage writes
   const [localApiKey, setLocalApiKey] = useState(apiKey);
   const [localInstructions, setLocalInstructions] = useState(customInstructions);
+  const [localTemperature, setLocalTemperature] = useState(temperature);
+  const [localTopP, setLocalTopP] = useState(topP);
+  const [localMaxTokens, setLocalMaxTokens] = useState(maxTokens);
 
   useEffect(() => {
     setLocalApiKey(apiKey);
     setLocalInstructions(customInstructions);
-  }, [apiKey, customInstructions]);
+    setLocalTemperature(temperature);
+    setLocalTopP(topP);
+    setLocalMaxTokens(maxTokens);
+  }, [apiKey, customInstructions, temperature, topP, maxTokens]);
 
   const handleSaveSettings = () => {
     if (localApiKey !== apiKey) setApiKey(localApiKey);
     if (localInstructions !== customInstructions) setCustomInstructions(localInstructions);
+    if (localTemperature !== temperature) setTemperature(localTemperature);
+    if (localTopP !== topP) setTopP(localTopP);
+    if (localMaxTokens !== maxTokens) setMaxTokens(localMaxTokens);
   };
 
   const handleExport = () => {
@@ -89,8 +105,6 @@ export function SettingsModal({
   const handleClearAll = () => {
     setChatHistory([]);
     setConfirmClear(false);
-    // Maybe keep crafts? Or clear everything?
-    // Let's clear history only as the button says "Clear Chat History"
   };
 
   if (!isOpen) return null;
@@ -185,6 +199,79 @@ export function SettingsModal({
                   {theme === 'dark' ? 'Dark' : 'Light'}
                 </button>
               </div>
+            </div>
+
+            {/* Model Parameters */}
+            <div className="space-y-3">
+               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Model Parameters</h3>
+
+               {/* Temperature */}
+               <div className="space-y-2">
+                   <div className="flex justify-between text-sm font-medium">
+                       <div className="flex items-center gap-2">
+                           <Thermometer size={16} />
+                           <span>Temperature</span>
+                       </div>
+                       <span className="text-muted-foreground">{localTemperature.toFixed(1)}</span>
+                   </div>
+                   <input
+                       type="range"
+                       min="0"
+                       max="2"
+                       step="0.1"
+                       value={localTemperature}
+                       onChange={(e) => setLocalTemperature(parseFloat(e.target.value))}
+                       onMouseUp={handleSaveSettings}
+                       onTouchEnd={handleSaveSettings}
+                       className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                   />
+                   <div className="flex justify-between text-xs text-muted-foreground">
+                       <span>Precise</span>
+                       <span>Creative</span>
+                   </div>
+               </div>
+
+               {/* Top P */}
+               <div className="space-y-2">
+                   <div className="flex justify-between text-sm font-medium">
+                       <div className="flex items-center gap-2">
+                           <Zap size={16} />
+                           <span>Top P</span>
+                       </div>
+                       <span className="text-muted-foreground">{localTopP.toFixed(2)}</span>
+                   </div>
+                   <input
+                       type="range"
+                       min="0"
+                       max="1"
+                       step="0.05"
+                       value={localTopP}
+                       onChange={(e) => setLocalTopP(parseFloat(e.target.value))}
+                       onMouseUp={handleSaveSettings}
+                       onTouchEnd={handleSaveSettings}
+                       className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                   />
+               </div>
+
+               {/* Max Tokens */}
+               <div className="space-y-2">
+                   <div className="flex justify-between text-sm font-medium">
+                       <div className="flex items-center gap-2">
+                           <Hash size={16} />
+                           <span>Max Tokens</span>
+                       </div>
+                   </div>
+                   <input
+                       type="number"
+                       min="128"
+                       max="32768"
+                       step="128"
+                       value={localMaxTokens}
+                       onChange={(e) => setLocalMaxTokens(parseInt(e.target.value) || 0)}
+                       onBlur={handleSaveSettings}
+                       className="w-full bg-muted/50 border border-transparent focus:border-primary rounded-lg py-2 px-3 text-sm focus:outline-none transition-colors"
+                   />
+               </div>
             </div>
 
             {/* Data Management */}

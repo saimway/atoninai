@@ -26,7 +26,7 @@ import { cn } from '@/lib/utils';
 
 export default function Home() {
   const { chatHistory, setChatHistory, crafts, setCrafts } = useLocalStorage();
-  const { apiKey, customInstructions } = useSettings();
+  const { apiKey, customInstructions, temperature, topP, maxTokens } = useSettings();
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -306,6 +306,9 @@ export default function Home() {
           modelId: currentModel,
           apiKey,
           systemInstruction: customInstructions,
+          temperature,
+          topP,
+          maxTokens
         }),
         signal: abortControllerRef.current.signal,
       });
