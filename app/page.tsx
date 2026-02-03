@@ -9,7 +9,7 @@ import { useLocalStorage, ChatMessage, ChatThread, ContentPart } from '@/app/hoo
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 import { useSidebar } from '@/app/contexts/SidebarContext';
 import { useSettings } from '@/app/contexts/SettingsContext';
-import { Send, MoreVertical, Loader2, Square, Download, Search, X, ArrowDown, Mic, MicOff, Eye, Pencil, Book, Trash2, Paperclip, FileText } from 'lucide-react';
+import { Send, MoreVertical, Loader2, Square, Download, Search, X, ArrowDown, Mic, MicOff, Eye, Pencil, Book, Trash2, Paperclip, FileText, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AutoResizeTextarea } from '@/app/components/AutoResizeTextarea';
 import { useSpeechRecognition } from '@/app/hooks/useSpeechRecognition';
@@ -32,8 +32,10 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentModel, setCurrentModel] = useState(MODELS[0].id);
   const [isPromptLibraryOpen, setIsPromptLibraryOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   // File Attachments
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
   const [attachments, setAttachments] = useState<Array<{ id: string; file: File }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -44,16 +46,69 @@ export default function Home() {
         file
       }));
 
-      // Filter by size (max 1MB)
-      const validAttachments = newAttachments.filter(a => a.file.size <= 1024 * 1024);
+      // Filter by size (max 10MB)
+      const validAttachments = newAttachments.filter(a => a.file.size <= MAX_FILE_SIZE);
 
       if (validAttachments.length < newAttachments.length) {
-        alert("Some files were skipped because they exceed the 1MB limit.");
+        alert("Some files were skipped because they exceed the 10MB limit.");
       }
 
       setAttachments(prev => [...prev, ...validAttachments]);
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    const newAttachments: { id: string; file: File }[] = [];
+
+    for (let i = 0; i < items.length; i++) {
+        if (items[i].kind === 'file') {
+            const file = items[i].getAsFile();
+            if (file) {
+                if (file.size > MAX_FILE_SIZE) {
+                    alert(`File ${file.name} is too large. Max size is 10MB.`);
+                    continue;
+                }
+                newAttachments.push({ id: uuidv4(), file });
+            }
+        }
+    }
+
+    if (newAttachments.length > 0) {
+        setAttachments(prev => [...prev, ...newAttachments]);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+         const newAttachments = Array.from(e.dataTransfer.files).map(file => ({
+            id: uuidv4(),
+            file
+         }));
+
+        const validAttachments = newAttachments.filter(a => a.file.size <= MAX_FILE_SIZE);
+
+        if (validAttachments.length < newAttachments.length) {
+            alert("Some files were skipped because they exceed the 10MB limit.");
+        }
+
+        setAttachments(prev => [...prev, ...validAttachments]);
+    }
   };
 
   const removeAttachment = (id: string) => {
@@ -536,7 +591,17 @@ export default function Home() {
            marginLeft: isMobile ? 0 : (isCollapsed ? '80px' : '260px'),
            marginRight: isMobile ? 0 : (isArtifactOpen ? '450px' : '0')
         }}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
       >
+          {isDragging && (
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center border-2 border-dashed border-primary m-4 rounded-xl pointer-events-none">
+                <Upload size={48} className="text-primary mb-4" />
+                <h3 className="text-xl font-bold">Drop files here</h3>
+                <p className="text-muted-foreground">Add to your message</p>
+            </div>
+          )}
 
           {/* Mobile Header */}
           <div className="md:hidden flex items-center p-4 border-b border-border bg-card">
@@ -799,6 +864,7 @@ export default function Home() {
                               value={input}
                               onChange={(e) => setInput(e.target.value)}
                               onEnter={() => handleSubmit()}
+                              onPaste={handlePaste}
                               placeholder={isListening ? "Listening..." : "Message Atonin..."}
                               disabled={isLoading || isListening}
                               className="w-full bg-transparent text-foreground placeholder-muted-foreground py-3 pl-2 pr-12 max-h-[200px]"
