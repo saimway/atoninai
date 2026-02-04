@@ -10,6 +10,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageBubble } from '@/app/components/MessageBubble';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 import { useRouter } from 'next/navigation';
+import { SettingsModal } from '@/app/components/SettingsModal';
+import { KeyboardShortcutsModal } from '@/app/components/KeyboardShortcutsModal';
 
 function BotIcon() {
     return (
@@ -77,6 +79,8 @@ export default function CraftsPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const isMobile = useMediaQuery('(max-width: 768px)');
   const router = useRouter();
 
@@ -310,6 +314,8 @@ export default function CraftsPage() {
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
         currentChatId={null}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onToggleShortcuts={() => setIsShortcutsOpen(prev => !prev)}
       />
 
       <div className="flex-1 flex flex-col h-full relative transition-all duration-300 md:ml-[260px] lg:ml-[260px] xl:ml-[260px] md:pl-0">
@@ -606,6 +612,18 @@ export default function CraftsPage() {
         </AnimatePresence>
 
       </div>
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        chatHistory={chatHistory}
+        setChatHistory={setChatHistory}
+        crafts={crafts}
+        setCrafts={setCrafts}
+      />
+      <KeyboardShortcutsModal
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
+      />
     </div>
   );
 }

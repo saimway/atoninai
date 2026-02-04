@@ -6,8 +6,6 @@ import { SidebarItem } from './SidebarItem';
 import { MessageSquare, Hammer, Settings, Menu, X, Plus, Search, Trash2, Star, Keyboard } from 'lucide-react';
 import { useSidebar } from '@/app/contexts/SidebarContext';
 import { ChatThread, Craft, ContentPart } from '@/app/hooks/useLocalStorage';
-import { SettingsModal } from './SettingsModal';
-import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -21,6 +19,8 @@ interface SidebarProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   currentChatId?: string | null;
+  onOpenSettings: () => void;
+  onToggleShortcuts: () => void;
 }
 
 export default function Sidebar({
@@ -33,18 +33,18 @@ export default function Sidebar({
   isMobile,
   isOpen,
   setIsOpen,
-  currentChatId
+  currentChatId,
+  onOpenSettings,
+  onToggleShortcuts
 }: SidebarProps) {
   const { isCollapsed, toggleSidebar } = useSidebar();
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
         if ((e.ctrlKey || e.metaKey) && e.key === '/') {
             e.preventDefault();
-            setIsShortcutsOpen(prev => !prev);
+            onToggleShortcuts();
         }
         if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
             e.preventDefault();
@@ -162,20 +162,6 @@ export default function Sidebar({
 
   return (
     <>
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        chatHistory={chatHistory}
-        setChatHistory={setChatHistory}
-        crafts={crafts}
-        setCrafts={setCrafts}
-      />
-
-      <KeyboardShortcutsModal
-        isOpen={isShortcutsOpen}
-        onClose={() => setIsShortcutsOpen(false)}
-      />
-
       {/* Mobile Overlay */}
       {isMobile && isOpen && (
         <div
@@ -309,7 +295,7 @@ export default function Sidebar({
 
         <div className="p-4 border-t border-border mt-auto space-y-1">
           <button
-            onClick={() => setIsShortcutsOpen(true)}
+            onClick={onToggleShortcuts}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors ${isCollapsed ? 'justify-center' : ''}`}
             title="Keyboard Shortcuts"
           >
@@ -317,7 +303,7 @@ export default function Sidebar({
              {!isCollapsed && <span className="text-sm">Shortcuts</span>}
           </button>
           <button
-            onClick={() => setIsSettingsOpen(true)}
+            onClick={onOpenSettings}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors ${isCollapsed ? 'justify-center' : ''}`}
           >
              <Settings size={20} />
