@@ -9,12 +9,16 @@ import { useLocalStorage, ChatMessage, ChatThread, ContentPart } from '@/app/hoo
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 import { useSidebar } from '@/app/contexts/SidebarContext';
 import { useSettings } from '@/app/contexts/SettingsContext';
-import { Send, MoreVertical, Loader2, Square, Download, Search, X, ArrowDown, Mic, MicOff, Eye, Pencil, Book, Trash2, Paperclip, FileText, Upload } from 'lucide-react';
+import { Send, MoreVertical, Loader2, Square, Download, Search, X, ArrowDown, Mic, MicOff, Eye, Pencil, Book, Trash2, Paperclip, FileText, Upload, Settings, Hammer, Keyboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { AutoResizeTextarea } from '@/app/components/AutoResizeTextarea';
 import { useSpeechRecognition } from '@/app/hooks/useSpeechRecognition';
 import { SuggestionCards } from '@/app/components/SuggestionCards';
 import { PromptLibraryModal } from '@/app/components/PromptLibraryModal';
+import { SettingsModal } from '@/app/components/SettingsModal';
+import { KeyboardShortcutsModal } from '@/app/components/KeyboardShortcutsModal';
+import { SlashCommandMenu, SlashCommand } from '@/app/components/SlashCommandMenu';
 import { ArtifactPanel } from '@/app/components/ArtifactPanel';
 import { useArtifact } from '@/app/contexts/ArtifactContext';
 import ReactMarkdown from 'react-markdown';
@@ -25,6 +29,7 @@ import { CodeBlock } from '@/app/components/CodeBlock';
 import { cn } from '@/lib/utils';
 
 export default function Home() {
+  const router = useRouter();
   const { chatHistory, setChatHistory, crafts, setCrafts } = useLocalStorage();
   const { apiKey, customInstructions } = useSettings();
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
@@ -32,7 +37,26 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentModel, setCurrentModel] = useState(MODELS[0].id);
   const [isPromptLibraryOpen, setIsPromptLibraryOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Slash Commands
+  const [slashCommandQuery, setSlashCommandQuery] = useState<string | null>(null);
+  const [slashCommandIndex, setSlashCommandIndex] = useState(0);
+
+  const COMMANDS: SlashCommand[] = useMemo(() => [
+    { id: 'clear', label: '/clear', description: 'Clear the current chat history', icon: Trash2 },
+    { id: 'settings', label: '/settings', description: 'Open application settings', icon: Settings },
+    { id: 'crafts', label: '/crafts', description: 'Manage custom system prompts', icon: Hammer },
+    { id: 'prompt', label: '/prompt', description: 'Open Prompt Library', icon: Book },
+    { id: 'help', label: '/help', description: 'View keyboard shortcuts', icon: Keyboard },
+  ], []);
+
+  const filteredCommands = useMemo(() => {
+    if (slashCommandQuery === null) return [];
+    return COMMANDS.filter(c => c.label.toLowerCase().startsWith(slashCommandQuery.toLowerCase()));
+  }, [slashCommandQuery, COMMANDS]);
 
   // File Attachments
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -569,6 +593,62 @@ export default function Home() {
     setInput(prev => prev + (prev ? '\n\n' : '') + promptContent);
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    setInput(newValue);
+
+    const match = /^\/(\w*)$/.exec(newValue);
+    if (match) {
+        setSlashCommandQuery(match[0]);
+        setSlashCommandIndex(0);
+    } else {
+        setSlashCommandQuery(null);
+    }
+  };
+
+  const executeSlashCommand = (command: SlashCommand) => {
+    setSlashCommandQuery(null);
+    setInput('');
+
+    switch (command.id) {
+        case 'clear':
+            handleClearChat();
+            break;
+        case 'settings':
+            setIsSettingsOpen(true);
+            break;
+        case 'crafts':
+            router.push('/crafts');
+            break;
+        case 'prompt':
+            setIsPromptLibraryOpen(true);
+            break;
+        case 'help':
+            setIsShortcutsOpen(true);
+            break;
+    }
+  };
+
+  const handleSlashKeyDown = (e: React.KeyboardEvent) => {
+    if (slashCommandQuery !== null && filteredCommands.length > 0) {
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setSlashCommandIndex(prev => (prev - 1 + filteredCommands.length) % filteredCommands.length);
+            return;
+        }
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setSlashCommandIndex(prev => (prev + 1) % filteredCommands.length);
+            return;
+        }
+        if (e.key === 'Escape') {
+             e.preventDefault();
+             setSlashCommandQuery(null);
+             return;
+        }
+    }
+  };
+
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
       <Sidebar
@@ -582,6 +662,8 @@ export default function Home() {
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
         currentChatId={currentChatId}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onToggleShortcuts={() => setIsShortcutsOpen(prev => !prev)}
       />
 
       {/* Main Content Area */}
@@ -860,15 +942,29 @@ export default function Home() {
                               </div>
                           </div>
                       ) : (
-                          <AutoResizeTextarea
-                              value={input}
-                              onChange={(e) => setInput(e.target.value)}
-                              onEnter={() => handleSubmit()}
-                              onPaste={handlePaste}
-                              placeholder={isListening ? "Listening..." : "Message Atonin..."}
-                              disabled={isLoading || isListening}
-                              className="w-full bg-transparent text-foreground placeholder-muted-foreground py-3 pl-2 pr-12 max-h-[200px]"
-                          />
+                          <>
+                            <SlashCommandMenu
+                                commands={filteredCommands}
+                                selectedIndex={slashCommandIndex}
+                                onSelect={executeSlashCommand}
+                            />
+                            <AutoResizeTextarea
+                                value={input}
+                                onChange={handleInputChange}
+                                onEnter={() => {
+                                    if (slashCommandQuery !== null && filteredCommands.length > 0) {
+                                        executeSlashCommand(filteredCommands[slashCommandIndex]);
+                                    } else {
+                                        handleSubmit();
+                                    }
+                                }}
+                                onKeyDown={handleSlashKeyDown}
+                                onPaste={handlePaste}
+                                placeholder={isListening ? "Listening..." : "Message Atonin..."}
+                                disabled={isLoading || isListening}
+                                className="w-full bg-transparent text-foreground placeholder-muted-foreground py-3 pl-2 pr-12 max-h-[200px]"
+                            />
+                          </>
                       )}
 
                       {isLoading ? (
@@ -905,6 +1001,18 @@ export default function Home() {
         isOpen={isPromptLibraryOpen}
         onClose={() => setIsPromptLibraryOpen(false)}
         onSelectPrompt={handleSelectPrompt}
+      />
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        chatHistory={chatHistory}
+        setChatHistory={setChatHistory}
+        crafts={crafts}
+        setCrafts={setCrafts}
+      />
+      <KeyboardShortcutsModal
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
       />
     </div>
   );
