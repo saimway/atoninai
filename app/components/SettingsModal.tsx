@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Moon, Sun, Trash2, Download, Upload, AlertTriangle, Key, MessageSquareText, Eye, EyeOff } from 'lucide-react';
+import { X, Moon, Sun, Trash2, Download, Upload, AlertTriangle, Key, MessageSquareText, Eye, EyeOff, Maximize2, Minimize2 } from 'lucide-react';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useSettings } from '@/app/contexts/SettingsContext';
 import { ChatThread, Craft } from '@/app/hooks/useLocalStorage';
@@ -25,7 +25,7 @@ export function SettingsModal({
   setCrafts
 }: SettingsModalProps) {
   const { theme, setTheme } = useTheme();
-  const { apiKey, setApiKey, customInstructions, setCustomInstructions } = useSettings();
+  const { apiKey, setApiKey, customInstructions, setCustomInstructions, isWideMode, setIsWideMode } = useSettings();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
@@ -183,6 +183,24 @@ export function SettingsModal({
                   className="px-3 py-1.5 bg-background border border-border rounded-md text-sm font-medium hover:bg-muted transition-colors"
                 >
                   {theme === 'dark' ? 'Dark' : 'Light'}
+                </button>
+              </div>
+              <div className="flex items-center justify-between bg-muted/50 p-3 rounded-lg">
+                <div className="flex items-center gap-3">
+                  {isWideMode ? <Maximize2 size={18} /> : <Minimize2 size={18} />}
+                  <span>Wide Mode</span>
+                </div>
+                <button
+                  onClick={() => setIsWideMode(!isWideMode)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    isWideMode ? 'bg-primary' : 'bg-input'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      isWideMode ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
                 </button>
               </div>
             </div>
