@@ -31,7 +31,7 @@ import { cn } from '@/lib/utils';
 export default function Home() {
   const router = useRouter();
   const { chatHistory, setChatHistory, crafts, setCrafts } = useLocalStorage();
-  const { apiKey, customInstructions } = useSettings();
+  const { apiKey, customInstructions, isWideMode } = useSettings();
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -798,6 +798,7 @@ export default function Home() {
                           <MessageBubble
                             key={idx}
                             message={msg}
+                            isThinking={isLoading && idx === messages.length - 1}
                             onRegenerate={
                                 (!isLoading && idx === messages.length - 1 && msg.role === 'assistant')
                                 ? handleRegenerate
@@ -811,7 +812,10 @@ export default function Home() {
                           <motion.div
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
-                              className="flex gap-4 w-full max-w-3xl mx-auto p-4"
+                              className={cn(
+                                "flex gap-4 w-full mx-auto p-4",
+                                isWideMode ? "max-w-5xl" : "max-w-3xl"
+                              )}
                           >
                                <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center">
                                    <BotIcon />
@@ -844,7 +848,10 @@ export default function Home() {
 
           {/* Input Area */}
           <div className="p-4 bg-background border-t border-border z-30 relative">
-              <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative flex flex-col bg-muted rounded-2xl ring-offset-background focus-within:ring-2 focus-within:ring-primary/50 transition-shadow">
+              <form onSubmit={handleSubmit} className={cn(
+                "mx-auto relative flex flex-col bg-muted rounded-2xl ring-offset-background focus-within:ring-2 focus-within:ring-primary/50 transition-shadow",
+                isWideMode ? "max-w-5xl" : "max-w-3xl"
+              )}>
 
                   {/* Toolbar */}
                   {input.trim() && (

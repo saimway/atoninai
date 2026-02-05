@@ -1,9 +1,10 @@
-import { memo, useState, useMemo, useEffect, ComponentPropsWithoutRef } from 'react';
+import { memo, useState, useMemo, useEffect, useRef, ComponentPropsWithoutRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChatMessage, ContentPart } from '@/app/hooks/useLocalStorage';
 import { cn } from '@/lib/utils';
-import { Bot, User, Copy, Check, RefreshCw, Pencil, Save, ChevronDown, ChevronRight, BrainCircuit, Volume2, Square } from 'lucide-react';
+import { Bot, User, Copy, Check, RefreshCw, Pencil, Save, ChevronDown, ChevronRight, BrainCircuit, Volume2, Square, Clock } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { useSettings } from '@/app/contexts/SettingsContext';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -15,6 +16,7 @@ interface MessageBubbleProps {
   onRegenerate?: () => void;
   onEdit?: (newContent: string) => void;
   highlight?: string;
+  isThinking?: boolean;
 }
 
 const extractThinking = (content: string) => {
@@ -27,7 +29,8 @@ const extractThinking = (content: string) => {
   return { thinking: null, cleanContent: content };
 };
 
-export const MessageBubble = memo(function MessageBubble({ message, onRegenerate, onEdit, highlight }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message, onRegenerate, onEdit, highlight, isThinking }: MessageBubbleProps) {
+  const { isWideMode } = useSettings();
   const [isCopied, setIsCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -55,6 +58,32 @@ export const MessageBubble = memo(function MessageBubble({ message, onRegenerate
     if (isUser) return { thinking: null, cleanContent: textContent };
     return extractThinking(textContent);
   }, [textContent, isUser]);
+
+  // Thinking Timer Logic
+  const startTimeRef = useRef<number | null>(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
+
+  useEffect(() => {
+    if (!isThinking || !thinking) return;
+
+    if (!startTimeRef.current) startTimeRef.current = Date.now();
+
+    const interval = setInterval(() => {
+       if (startTimeRef.current) {
+          setElapsedTime(Math.floor((Date.now() - startTimeRef.current) / 1000));
+       }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [isThinking, Boolean(thinking)]);
+
+  // Reset timer when message changes completely (unlikely in this flow but good practice)
+  useEffect(() => {
+      if (!isThinking) {
+          startTimeRef.current = null;
+          setElapsedTime(0);
+      }
+  }, [isThinking]);
 
   useEffect(() => {
     return () => {
@@ -198,7 +227,8 @@ export const MessageBubble = memo(function MessageBubble({ message, onRegenerate
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "flex gap-4 w-full max-w-3xl mx-auto p-4 group",
+        "flex gap-4 w-full mx-auto p-4 group",
+        isWideMode ? "max-w-5xl" : "max-w-3xl",
         isUser ? "flex-row-reverse" : "flex-row"
       )}
     >
@@ -271,6 +301,12 @@ export const MessageBubble = memo(function MessageBubble({ message, onRegenerate
                       >
                          <BrainCircuit size={14} />
                          <span>Thinking Process</span>
+                         {isThinking && (
+                             <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1">
+                                 <Clock size={10} />
+                                 {elapsedTime}s
+                             </span>
+                         )}
                          {isThinkingExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                       </button>
                       <AnimatePresence>
