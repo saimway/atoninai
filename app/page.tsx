@@ -9,7 +9,7 @@ import { useLocalStorage, ChatMessage, ChatThread, ContentPart } from '@/app/hoo
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 import { useSidebar } from '@/app/contexts/SidebarContext';
 import { useSettings } from '@/app/contexts/SettingsContext';
-import { Send, MoreVertical, Loader2, Square, Download, Search, X, ArrowDown, Mic, MicOff, Eye, Pencil, Book, Trash2, Paperclip, FileText, Upload, Settings, Hammer, Keyboard } from 'lucide-react';
+import { Send, MoreVertical, Loader2, Square, Download, Search, X, ArrowDown, Mic, MicOff, Eye, Pencil, Book, Trash2, Paperclip, FileText, Upload, Settings, Hammer, Keyboard, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { AutoResizeTextarea } from '@/app/components/AutoResizeTextarea';
@@ -40,6 +40,7 @@ export default function Home() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   // Slash Commands
   const [slashCommandQuery, setSlashCommandQuery] = useState<string | null>(null);
@@ -589,6 +590,53 @@ export default function Home() {
 
   }, [chatHistory, currentChatId, isLoading, setChatHistory, currentModel]);
 
+  const handleEnhancePrompt = async () => {
+    if (!input.trim() || isEnhancing) return;
+    setIsEnhancing(true);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+             { role: 'system', content: 'You are an expert prompt engineer. Rewrite the following user prompt to be more precise, detailed, and optimized for Large Language Models. Do not answer the prompt, just rewrite it. Return ONLY the rewritten prompt.' },
+             { role: 'user', content: input }
+          ],
+          modelId: 'llama-3.1-8b-instant',
+          apiKey,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to enhance prompt');
+      if (!response.body) throw new Error('No response body');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let enhancedText = '';
+      let isFirstChunk = true;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        enhancedText += chunk;
+
+        if (isFirstChunk) {
+            setInput(chunk);
+            isFirstChunk = false;
+        } else {
+            setInput(prev => prev + chunk);
+        }
+      }
+    } catch (error) {
+      console.error('Error enhancing prompt:', error);
+      alert('Failed to enhance prompt. Please try again.');
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
+
   const handleSelectPrompt = (promptContent: string) => {
     setInput(prev => prev + (prev ? '\n\n' : '') + promptContent);
   };
@@ -919,6 +967,20 @@ export default function Home() {
                         title="Prompt Library"
                       >
                           <Book size={18} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleEnhancePrompt}
+                        disabled={isEnhancing || !input.trim()}
+                        className={`p-3 rounded-xl transition-colors mb-1 ml-1 ${
+                            isEnhancing
+                            ? 'text-purple-500 bg-purple-500/10'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+                        } ${(!input.trim() && !isEnhancing) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title="Magic Enhance Prompt"
+                      >
+                          {isEnhancing ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
                       </button>
 
                       {hasSupport && (
